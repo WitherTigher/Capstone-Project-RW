@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # readright
 
 A new Flutter project.
@@ -14,3 +15,10 @@ A few resources to get you started if this is your first Flutter project:
 For help getting started with Flutter development, view the
 [online documentation](https://docs.flutter.dev/), which offers tutorials,
 samples, guidance on mobile development, and a full API reference.
+=======
+# CPSC 4150 ReadRight Project
+
+# Design
+
+# Folder Layout
+>>>>>>> 83be6c5840a3a5e2522893b415f971b1d1f10c49

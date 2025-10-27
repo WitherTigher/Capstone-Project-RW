@@ -182,7 +182,7 @@ class WordListPage extends StatelessWidget {
                       height: 54,
                       child: OutlinedButton.icon(
                         onPressed: () {
-                          Navigator.pushNamed(context, '/teacherdashboard');
+                          Navigator.pushNamed(context, '/teacherDashboard');
                         },
                         icon: const Icon(Icons.list_alt, size: 22),
                         label: const Text(

@@ -31,6 +31,7 @@ class MyApp extends StatelessWidget {
         '/progress': (context) => const ProgressPage(),
         '/practice': (context) => const PracticePage(),
         '/wordlist': (context) => const WordListPage(),
+        '/feedback': (context) => const FeedbackPage(),
       },
     );
   }

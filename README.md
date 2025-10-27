@@ -23,6 +23,44 @@ Teachers can assign custom word lists, review results, and optionally access stu
 
 ---
 
+## Project Structure
+
+```
+lib/
+│
+├── config/                # App-wide configuration values
+│   └── config.dart
+│
+├── data/                  # Local files, placeholders, or cached data
+│   └── [placeholder]
+│
+├── models/                # Data models (e.g., Attempt, Word, User)
+│   └── [placeholder]
+│
+├── screen/                # UI pages and main app flows
+│   ├── feedback.dart          # Feedback view after practice
+│   ├── practice.dart          # Recording and pronunciation assessment
+│   ├── progress.dart          # Progress tracking and charts
+│   ├── teacherDashboard.dart  # Teacher analytics overview
+│   ├── wordList.dart          # Word selection and sample sentences
+│   └── login.dart             # Authentication page
+│
+├── services/              # Business logic and backend communication
+│   └── [placeholder]
+│
+├── widgets/               # Reusable UI components
+│   ├── base_scaffold.dart     # Common scaffold with bottom navigation
+│   └── navbar.dart            # Bottom navigation bar
+│
+└── main.dart              # App entry point and route configuration
+```
+
+Other folders:
+- **assets/** — Static files (e.g., CSVs, images, audio)
+- **test/** — Unit and widget tests
+
+---
+
 ## Architecture
 
 | Layer | Description |

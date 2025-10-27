@@ -7,6 +7,8 @@ class LoginPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    var controller = TextEditingController();
+
     return Scaffold(
       // matches “Progress” tab index in NavBar
       body: Center(
@@ -29,7 +31,7 @@ class LoginPage extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 6),
-            TextField(decoration: InputDecoration(hintText: 'Username')),
+            TextField(controller: controller, decoration: InputDecoration(hintText: 'Username')),
 
             const SizedBox(height: 20),
             Text(
@@ -45,7 +47,11 @@ class LoginPage extends StatelessWidget {
             const SizedBox(height: 40),
             ElevatedButton(
               onPressed: () {
-                Navigator.pushReplacementNamed(context, '/progress');
+                if (controller.text == "teacher") {
+                  Navigator.pushReplacementNamed(context, '/teacherDashboard');
+                } else {
+                  Navigator.pushReplacementNamed(context, '/progress');
+                }
               },
               child: Text('Login'),
             ),

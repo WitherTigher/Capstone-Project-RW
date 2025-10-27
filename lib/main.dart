@@ -4,6 +4,7 @@ import 'package:readright/screen/login.dart';
 import 'package:readright/screen/progress.dart';
 import 'package:readright/screen/practice.dart';
 import 'package:readright/screen/wordList.dart';
+import 'package:readright/screen/feedback.dart';
 
 void main() {
   runApp(const MyApp());
@@ -29,8 +30,8 @@ class MyApp extends StatelessWidget {
       routes: {
         '/login': (context) => const LoginPage(),
         '/progress': (context) => const ProgressPage(),
-        '/practice': (context) => const PracticePage(),
-        '/wordlist': (context) => const WordListPage(),
+        //'/practice': (context) => const PracticePage(),
+        //'/wordlist': (context) => const WordListPage(),
         '/feedback': (context) => const FeedbackPage(),
       },
     );

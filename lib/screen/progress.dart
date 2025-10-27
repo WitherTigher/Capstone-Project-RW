@@ -9,7 +9,7 @@ class ProgressPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return BaseScaffold(
       // matches “Progress” tab index in NavBar
-      currentIndex: 2,
+      currentIndex: 0,
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,

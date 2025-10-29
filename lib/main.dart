@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:readright/config/config.dart';
 import 'package:readright/screen/login.dart';
@@ -6,8 +7,22 @@ import 'package:readright/screen/practice.dart';
 import 'package:readright/screen/teacherDashboard.dart';
 import 'package:readright/screen/wordList.dart';
 import 'package:readright/screen/feedback.dart';
+import 'package:readright/services/databaseHelper.dart';
+import 'package:sqflite_common_ffi/sqflite_ffi.dart';
+import 'package:sqflite/sqflite.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Platform-aware initialization
+  if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
+    sqfliteFfiInit();
+    databaseFactory = databaseFactoryFfi;
+  }
+
+  //import initial CSV seed data once
+  await DatabaseHelper.instance.importSeedWords();
+
   runApp(const MyApp());
 }
 

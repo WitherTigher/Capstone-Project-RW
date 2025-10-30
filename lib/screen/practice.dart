@@ -1,6 +1,66 @@
 import 'package:readright/config/config.dart';
 import 'package:flutter/material.dart';
 import 'package:readright/widgets/base_scaffold.dart';
+import 'package:readright/services/databaseHelper.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+/// MOCK FUNCTION TO UPLOAD RECORDING TO SUPABASE STORAGE
+// Future<String?> uploadRecording(File file, String userId) async {
+//   final supabase = Supabase.instance.client;
+//
+//   // Generate a unique filename
+//   final fileName =
+//       'recordings/$userId/${DateTime.now().millisecondsSinceEpoch}_${p.basename(file.path)}';
+//
+//   // Detect content type (optional)
+//   final mimeType = lookupMimeType(file.path) ?? 'audio/wav';
+//
+//   try {
+//     await supabase.storage.from('Uploads').upload(
+//       fileName,
+//       file,
+//       fileOptions: FileOptions(
+//         cacheControl: '3600',
+//         upsert: false,
+//         contentType: mimeType,
+//       ),
+//     );
+//
+//     // Get a public URL
+//     final publicUrl =
+//     supabase.storage.from('Uploads').getPublicUrl(fileName);
+//
+//     return publicUrl;
+//   } catch (e) {
+//     print('Upload failed: $e');
+//     return null;
+//   }
+// }
+/// THEN STORE THE URL IN THE DATABASE
+// final user = Supabase.instance.client.auth.currentUser;
+// if (user == null) {
+//   ScaffoldMessenger.of(context).showSnackBar(
+//     const SnackBar(content: Text('Please log in to upload recordings.')),
+//   );
+//   return;
+// }
+//
+// // Assume 'audioFile' is a File you just recorded
+// final url = await uploadRecording(audioFile, user.id);
+//
+// if (url != null) {
+//   // Store this URL in Supabase DB
+//   await Supabase.instance.client.from('attempts').insert({
+//     'user_id': user.id,
+//     'word_id': wordId,
+//     'score': analysisScore,
+//     'feedback': feedback,
+//     'recording_url': url, // <-- this is the url to the uploaded file
+//   });
+// }
+
+
+
 
 class PracticePage extends StatelessWidget {
   const PracticePage({Key? key}) : super(key: key);

@@ -1,141 +1,75 @@
 import 'package:flutter/material.dart';
 import 'package:readright/config/config.dart';
 import 'package:readright/widgets/base_scaffold.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:readright/services/databaseHelper.dart';
 
-class ProgressPage extends StatelessWidget {
+class ProgressPage extends StatefulWidget {
   const ProgressPage({super.key});
+
+  @override
+  State<ProgressPage> createState() => _ProgressPageState();
+}
+
+class _ProgressPageState extends State<ProgressPage> {
+  Map<String, dynamic> stats = {};
+  List<Map<String, dynamic>> attempts = [];
+  bool isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProgress();
+  }
+
+  Future<void> _loadProgress() async {
+    final user = Supabase.instance.client.auth.currentUser;
+
+    if (user == null) {
+      if (mounted) Navigator.pushReplacementNamed(context, '/login');
+      return;
+    }
+
+    final db = DatabaseHelper.instance;
+
+    try {
+      final userStats = await db.getUserProgressStats(user.id);
+      final userAttempts = await db.fetchAttemptsByUser(user.id);
+
+      setState(() {
+        stats = userStats;
+        attempts = userAttempts;
+        isLoading = false;
+      });
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error loading progress: $e')),
+        );
+      }
+      setState(() => isLoading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return BaseScaffold(
       currentIndex: 0,
       body: SafeArea(
-        child: SingleChildScrollView(
+        child: isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // App Bar
-              Container(
-                padding: const EdgeInsets.all(16.0),
-                color: Color(AppConfig.primaryColor),
-                child: Row(
-                  children: const [
-                    Icon(Icons.insights, color: Colors.white, size: 28),
-                    SizedBox(width: 12),
-                    Text(
-                      'Your Reading Progress',
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              // Summary Header
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(24.0),
-                decoration: const BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.only(
-                    bottomLeft: Radius.circular(24),
-                    bottomRight: Radius.circular(24),
-                  ),
-                ),
-                child: Column(
-                  children: [
-                    const Text(
-                      'Overall Performance',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF2D3748),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    _buildAverageScore(87),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Average Score (last 7 days)',
-                      style: TextStyle(
-                        color: Colors.grey.shade600,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
+              _buildHeader(),
+              _buildSummary(),
               const SizedBox(height: 20),
-
-              // Recent Attempts Card
-              _buildCard(
-                icon: Icons.history,
-                title: 'Recent Practice Sessions',
-                content: Column(
-                  children: [
-                    _buildAttemptRow('ship', 92, 'Great /ʃ/ sound!'),
-                    _buildAttemptRow('cat', 88, 'Excellent pronunciation'),
-                    _buildAttemptRow('thin', 74, 'Focus on /θ/ sound'),
-                  ],
-                ),
-              ),
-
+              _buildAttemptsCard(),
               const SizedBox(height: 16),
-
-              // Streaks & Stats Card
-              _buildCard(
-                icon: Icons.emoji_events,
-                title: 'Streak & Stats',
-                content: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildStatRow('Practice Streak', '5 days'),
-                    _buildStatRow('Words Practiced', '18'),
-                    _buildStatRow('Top Category', 'CVC Words'),
-                  ],
-                ),
-              ),
-
+              _buildStatsCard(),
               const SizedBox(height: 16),
-
-              // Export Button
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                child: SizedBox(
-                  width: double.infinity,
-                  height: 54,
-                  child: ElevatedButton.icon(
-                    onPressed: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Export feature coming soon!'),
-                          duration: Duration(seconds: 2),
-                        ),
-                      );
-                    },
-                    icon: const Icon(Icons.download),
-                    label: const Text(
-                      'Export Progress (CSV)',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Color(AppConfig.primaryColor),
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-
+              _buildExportButton(),
               const SizedBox(height: 100),
             ],
           ),
@@ -143,6 +77,141 @@ class ProgressPage extends StatelessWidget {
       ),
     );
   }
+
+  // ---------------- UI Sections ----------------
+
+  Widget _buildHeader() {
+    return Container(
+      padding: const EdgeInsets.all(16.0),
+      color: Color(AppConfig.primaryColor),
+      child: Row(
+        children: const [
+          Icon(Icons.insights, color: Colors.white, size: 28),
+          SizedBox(width: 12),
+          Text(
+            'Your Reading Progress',
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSummary() {
+    final avgScore = (stats['avgScore'] ?? 0).toDouble();
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(24.0),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.only(
+          bottomLeft: Radius.circular(24),
+          bottomRight: Radius.circular(24),
+        ),
+      ),
+      child: Column(
+        children: [
+          const Text(
+            'Overall Performance',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF2D3748),
+            ),
+          ),
+          const SizedBox(height: 12),
+          _buildAverageScore(avgScore.round()),
+          const SizedBox(height: 8),
+          Text(
+            'Average Score (${stats['totalAttempts'] ?? 0} attempts)',
+            style: TextStyle(
+              color: Colors.grey.shade600,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAttemptsCard() {
+    return _buildCard(
+      icon: Icons.history,
+      title: 'Recent Practice Sessions',
+      content: attempts.isEmpty
+          ? const Text('No attempts yet.')
+          : Column(
+        children: attempts.take(5).map((attempt) {
+          final wordText =
+              attempt['words']?['text'] ?? attempt['word_text'] ?? 'Unknown';
+          final score = attempt['score'] ?? 0;
+          final feedback = attempt['feedback'] ?? 'No feedback';
+          return _buildAttemptRow(wordText, score, feedback);
+        }).toList(),
+      ),
+    );
+  }
+
+  Widget _buildStatsCard() {
+    return _buildCard(
+      icon: Icons.emoji_events,
+      title: 'Stats',
+      content: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildStatRow('Total Attempts', '${stats['totalAttempts'] ?? 0}'),
+          _buildStatRow(
+            'Average Score',
+            stats['avgScore'] != null
+                ? (stats['avgScore'] as num).toStringAsFixed(1)
+                : '0',
+          ),
+          _buildStatRow('Last Attempt', stats['lastAttempt'] ?? 'N/A'),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildExportButton() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+      child: SizedBox(
+        width: double.infinity,
+        height: 54,
+        child: ElevatedButton.icon(
+          onPressed: () {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('CSV export feature coming soon.'),
+                duration: Duration(seconds: 2),
+              ),
+            );
+          },
+          icon: const Icon(Icons.download),
+          label: const Text(
+            'Export Progress (CSV)',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Color(AppConfig.primaryColor),
+            foregroundColor: Colors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ---------------- UI Helper Widgets ----------------
 
   Widget _buildAverageScore(int score) {
     return Container(

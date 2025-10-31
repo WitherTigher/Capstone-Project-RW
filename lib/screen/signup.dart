@@ -156,7 +156,7 @@ class _SignUpPageState extends State<SignUpPage> {
 
                 // Role Selector
                 DropdownButtonFormField<String>(
-                  value: _selectedRole,
+                  initialValue: _selectedRole,
                   items: const [
                     DropdownMenuItem(value: 'student', child: Text('Student')),
                     DropdownMenuItem(value: 'teacher', child: Text('Teacher')),

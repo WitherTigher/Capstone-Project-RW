@@ -1,30 +1,96 @@
+# ReadRight Flutter App Configuration
 name: readright
-description: "A new Flutter project."
+description: "An application to help kids learn to read better."
 publish_to: 'none'
 
+# Version and build number
 version: 1.0.0+1
 
+# Dart SDK version
 environment:
   sdk: ^3.9.0
 
+# ---------------------------------------------------------------------------
+# Dependencies
+# ---------------------------------------------------------------------------
 dependencies:
   flutter:
     sdk: flutter
+
+  # UI icons
   cupertino_icons: ^1.0.8
+
+  # Firebase (core, auth, storage)
   firebase_core: ^3.15.2
   firebase_auth: ^5.7.0
   firebase_storage: ^12.4.10
+
+  # File paths and CSV utilities
   path: ^1.9.0
-  sqflite: ^2.3.3
-  sqflite_common_ffi: ^2.3.6
   csv: ^6.0.0
+
+  # Supabase for authentication, storage, and database
   supabase_flutter: ^2.10.3
 
-
+# ---------------------------------------------------------------------------
+# Dev dependencies
+# ---------------------------------------------------------------------------
 dev_dependencies:
   flutter_test:
     sdk: flutter
+
   flutter_lints: ^5.0.0
 
+  # Launcher icons and splash screen generator
+  flutter_launcher_icons: ^0.13.1
+  flutter_native_splash: ^2.4.0
+
+# ---------------------------------------------------------------------------
+# Flutter assets
+# ---------------------------------------------------------------------------
 flutter:
   uses-material-design: true
+  assets:
+    - lib/assets/logo.png
+
+# ---------------------------------------------------------------------------
+# App icon configuration
+# ---------------------------------------------------------------------------
+flutter_launcher_icons:
+  android: true
+  ios: true
+  web:
+    generate: true
+    image_path: "lib/assets/logo.png"
+  windows:
+    generate: true
+    image_path: "lib/assets/logo.png"
+  macos:
+    generate: true
+    image_path: "lib/assets/logo.png"
+  image_path: "lib/assets/logo.png"
+
+# ---------------------------------------------------------------------------
+# Splash screen configuration
+# ---------------------------------------------------------------------------
+flutter_native_splash:
+  # Background color (matches primaryColor from AppConfig)
+  color: "#6BD425"
+
+  # Dark mode background color (matches secondaryColor)
+  color_dark: "#4DB6E2"
+
+  # Splash logo image
+  image: lib/assets/logo.png
+
+  # Platform targets
+  android: true
+  ios: true
+  web: true
+
+  # Layout options
+  fullscreen: true
+  android_gravity: center
+  ios_content_mode: center
+  web_image_mode: center
+  branding_mode: bottom

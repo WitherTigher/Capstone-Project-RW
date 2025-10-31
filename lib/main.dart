@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:readright/services/databaseHelper.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:readright/config/config.dart';
 import 'package:readright/screen/login.dart';
@@ -22,6 +23,9 @@ Future<void> main() async {
     url: supabaseUrl,
     anonKey: supabaseAnonKey,
   );
+
+  // Seed words list initialization
+  DatabaseHelper.instance.importSeedWords();
 
   runApp(const MyApp());
 }

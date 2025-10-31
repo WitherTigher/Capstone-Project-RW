@@ -1,7 +1,4 @@
-import 'dart:io' show Platform;
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:readright/config/config.dart';
 import 'package:readright/services/databaseHelper.dart';
@@ -18,27 +15,57 @@ import 'package:readright/screen/teacherDashboard.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // --- Supabase initialization ---
   const supabaseUrl = 'https://byhmgdgjlyphwyilrfjm.supabase.co';
   const supabaseAnonKey =
       'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ5aG1nZGdqbHlwaHd5aWxyZmptIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE4NDU1NDksImV4cCI6MjA3NzQyMTU0OX0.rkxUJIWYpoPpCV3azuK7vwenPATJeLjzTdTn13savZM';
 
-  await Supabase.initialize(
-    url: supabaseUrl,
-    anonKey: supabaseAnonKey,
-  );
-
-  // Import seed
-  await DatabaseHelper.instance.importSeedWords();
+  // Only initialize Supabase if it has not already been done
+  if (!Supabase.instance.isInitialized) {
+    await Supabase.initialize(
+      url: supabaseUrl,
+      anonKey: supabaseAnonKey,
+    );
+  }
 
   runApp(const MyApp());
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
 
   @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  bool _initialized = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _initAfterStartup();
+  }
+
+  Future<void> _initAfterStartup() async {
+    try {
+      await DatabaseHelper.instance.importSeedWords();
+      debugPrint('Seed words imported');
+    } catch (e) {
+      debugPrint('Seed import skipped: $e');
+    }
+    if (mounted) setState(() => _initialized = true);
+  }
+
+  @override
   Widget build(BuildContext context) {
+    if (!_initialized) {
+      return const MaterialApp(
+        home: Scaffold(
+          body: Center(child: CircularProgressIndicator()),
+        ),
+      );
+    }
+
     return MaterialApp(
       title: AppConfig.appName,
       debugShowCheckedModeBanner: false,

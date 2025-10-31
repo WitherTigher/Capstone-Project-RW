@@ -1,7 +1,4 @@
-import 'dart:io' show Platform;
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:readright/config/config.dart';
 
@@ -57,23 +54,6 @@ class _LoginPageState extends State<LoginPage> {
     setState(() => _isLoading = false);
   }
 
-  Future<void> _hardResetAuth() async {
-    final supabase = Supabase.instance.client;
-    try {
-      await supabase.auth.signOut(scope: SignOutScope.global);
-
-      if (!kIsWeb && (Platform.isAndroid || Platform.isIOS || Platform.isMacOS)) {
-        const storage = FlutterSecureStorage();
-        await storage.deleteAll();
-        debugPrint('Cleared secure storage cache');
-      }
-
-      debugPrint('Auth reset complete');
-    } catch (e) {
-      debugPrint('Hard reset error: $e');
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -83,7 +63,8 @@ class _LoginPageState extends State<LoginPage> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.lock_open, size: 80, color: Color(AppConfig.primaryColor)),
+              Icon(Icons.lock_open,
+                  size: 80, color: Color(AppConfig.primaryColor)),
               const SizedBox(height: 20),
               Text(
                 'Sign In',
@@ -112,7 +93,10 @@ class _LoginPageState extends State<LoginPage> {
               ),
               const SizedBox(height: 30),
               if (_errorText != null)
-                Text(_errorText!, style: const TextStyle(color: Colors.red)),
+                Text(
+                  _errorText!,
+                  style: const TextStyle(color: Colors.red),
+                ),
               const SizedBox(height: 10),
               SizedBox(
                 width: double.infinity,
@@ -128,30 +112,20 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                   child: _isLoading
                       ? const CircularProgressIndicator(color: Colors.white)
-                      : const Text('Login',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w600,
-                      )),
+                      : const Text(
+                    'Login',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                 ),
               ),
               const SizedBox(height: 16),
               TextButton(
-                onPressed: () => Navigator.pushReplacementNamed(context, '/signup'),
+                onPressed: () =>
+                    Navigator.pushReplacementNamed(context, '/signup'),
                 child: const Text("Don't have an account? Sign up"),
-              ),
-              const SizedBox(height: 24),
-              OutlinedButton.icon(
-                onPressed: _hardResetAuth,
-                icon: const Icon(Icons.cleaning_services),
-                label: const Text('Hard Reset Auth Cache'),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: Color(AppConfig.secondaryColor),
-                  side: BorderSide(
-                    color: Color(AppConfig.secondaryColor),
-                    width: 1.5,
-                  ),
-                ),
               ),
             ],
           ),

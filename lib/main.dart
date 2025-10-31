@@ -1,15 +1,19 @@
-import 'dart:io';
+import 'dart:io' show Platform;
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
-import 'package:readright/services/databaseHelper.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:readright/config/config.dart';
+import 'package:readright/services/databaseHelper.dart';
+
+// Screens
 import 'package:readright/screen/login.dart';
 import 'package:readright/screen/signup.dart';
 import 'package:readright/screen/progress.dart';
-import 'package:readright/screen/teacherDashboard.dart';
+import 'package:readright/screen/practice.dart';
 import 'package:readright/screen/wordList.dart';
 import 'package:readright/screen/feedback.dart';
-import 'package:readright/screen/practice.dart';
+import 'package:readright/screen/teacherDashboard.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -24,8 +28,8 @@ Future<void> main() async {
     anonKey: supabaseAnonKey,
   );
 
-  // Seed words list initialization
-  DatabaseHelper.instance.importSeedWords();
+  // Import seed
+  await DatabaseHelper.instance.importSeedWords();
 
   runApp(const MyApp());
 }
@@ -52,9 +56,9 @@ class MyApp extends StatelessWidget {
         '/signup': (context) => const SignUpPage(),
         '/progress': (context) => const ProgressPage(),
         '/practice': (context) => const PracticePage(),
-        '/teacherDashboard': (context) => const TeacherDashboard(),
         '/wordlist': (context) => const WordListPage(),
         '/feedback': (context) => const FeedbackPage(),
+        '/teacherDashboard': (context) => const TeacherDashboard(),
       },
     );
   }

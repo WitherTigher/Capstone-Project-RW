@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:readright/config/config.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:readright/config/config.dart';
 import 'package:readright/services/databaseHelper.dart';
 
 class SignUpPage extends StatefulWidget {
@@ -12,7 +12,6 @@ class SignUpPage extends StatefulWidget {
 
 class _SignUpPageState extends State<SignUpPage> {
   final _formKey = GlobalKey<FormState>();
-
   final TextEditingController _firstNameController = TextEditingController();
   final TextEditingController _lastNameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
@@ -38,7 +37,6 @@ class _SignUpPageState extends State<SignUpPage> {
     try {
       final supabase = Supabase.instance.client;
 
-      // Create user in Supabase Auth
       final res = await supabase.auth.signUp(
         email: email,
         password: password,
@@ -49,26 +47,25 @@ class _SignUpPageState extends State<SignUpPage> {
         },
       );
 
-      if (res.user != null) {
-        // Insert record into "users" table
-        await DatabaseHelper.instance.insertUser({
-          'id': res.user!.id,
-          'email': email,
-          'first_name': firstName,
-          'last_name': lastName,
-          'role': _selectedRole,
-          'locale': 'en-US',
-        });
-
-        setState(() => _message = 'Account created successfully!');
-        await Future.delayed(const Duration(seconds: 1));
-
-        if (mounted) {
-          Navigator.pushReplacementNamed(context, '/login');
-        }
-      } else {
-        setState(() => _message = 'Signup failed. Please try again.');
+      final user = res.user ?? supabase.auth.currentUser;
+      if (user == null) {
+        setState(() => _message = 'Signup failed: could not retrieve user.');
+        return;
       }
+
+      await DatabaseHelper.instance.insertUser({
+        'id': user.id,
+        'email': email,
+        'first_name': firstName,
+        'last_name': lastName,
+        'role': _selectedRole,
+        'locale': 'en-US',
+      });
+
+      setState(() => _message = 'Account created successfully.');
+      await Future.delayed(const Duration(seconds: 1));
+
+      if (mounted) Navigator.pushReplacementNamed(context, '/login');
     } catch (e) {
       setState(() => _message = 'Error: ${e.toString()}');
     }
@@ -86,11 +83,8 @@ class _SignUpPageState extends State<SignUpPage> {
             key: _formKey,
             child: Column(
               children: [
-                Icon(
-                  Icons.person_add_alt_1,
-                  size: 80,
-                  color: Color(AppConfig.primaryColor),
-                ),
+                Icon(Icons.person_add_alt_1,
+                    size: 80, color: Color(AppConfig.primaryColor)),
                 const SizedBox(height: 20),
                 Text(
                   'Create an Account',
@@ -101,8 +95,6 @@ class _SignUpPageState extends State<SignUpPage> {
                   ),
                 ),
                 const SizedBox(height: 30),
-
-                // First Name
                 TextFormField(
                   controller: _firstNameController,
                   decoration: const InputDecoration(
@@ -113,8 +105,6 @@ class _SignUpPageState extends State<SignUpPage> {
                   val == null || val.isEmpty ? 'Required' : null,
                 ),
                 const SizedBox(height: 20),
-
-                // Last Name
                 TextFormField(
                   controller: _lastNameController,
                   decoration: const InputDecoration(
@@ -125,8 +115,6 @@ class _SignUpPageState extends State<SignUpPage> {
                   val == null || val.isEmpty ? 'Required' : null,
                 ),
                 const SizedBox(height: 20),
-
-                // Email
                 TextFormField(
                   controller: _emailController,
                   decoration: const InputDecoration(
@@ -140,8 +128,6 @@ class _SignUpPageState extends State<SignUpPage> {
                   },
                 ),
                 const SizedBox(height: 20),
-
-                // Password
                 TextFormField(
                   controller: _passwordController,
                   obscureText: true,
@@ -153,8 +139,6 @@ class _SignUpPageState extends State<SignUpPage> {
                   val == null || val.length < 6 ? 'Min 6 characters' : null,
                 ),
                 const SizedBox(height: 20),
-
-                // Role Selector
                 DropdownButtonFormField<String>(
                   initialValue: _selectedRole,
                   items: const [
@@ -169,8 +153,6 @@ class _SignUpPageState extends State<SignUpPage> {
                   ),
                 ),
                 const SizedBox(height: 30),
-
-                // Status message
                 if (_message != null)
                   Padding(
                     padding: const EdgeInsets.only(bottom: 10),
@@ -184,8 +166,6 @@ class _SignUpPageState extends State<SignUpPage> {
                       ),
                     ),
                   ),
-
-                // Sign Up Button
                 SizedBox(
                   width: double.infinity,
                   height: 50,
@@ -208,8 +188,6 @@ class _SignUpPageState extends State<SignUpPage> {
                   ),
                 ),
                 const SizedBox(height: 16),
-
-                // Back to login
                 TextButton(
                   onPressed: () =>
                       Navigator.pushReplacementNamed(context, '/login'),

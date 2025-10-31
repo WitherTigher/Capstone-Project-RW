@@ -106,11 +106,26 @@ class DatabaseHelper {
   }
 
   Future<Map<String, dynamic>> getUserProgressStats(String userId) async {
-    final result = await client
-        .rpc('get_user_stats', params: {'user_id_input': userId})
-        .maybeSingle();
-    return result ?? {'totalAttempts': 0, 'avgScore': 0, 'lastAttempt': null};
+    final result = await client.rpc(
+      'get_user_stats',
+      params: {'user_id_input': userId},
+    );
+
+    // If Supabase returns a List<dynamic>, extract the first map.
+    if (result is List && result.isNotEmpty) {
+      return Map<String, dynamic>.from(result.first);
+    }
+
+    // If it returns a single Map already
+    if (result is Map<String, dynamic>) {
+      return result;
+    }
+    print('Requesting stats for user_id_input: $userId');
+
+    // Default empty result
+    return {'totalAttempts': 0, 'avgScore': 0, 'lastAttempt': null};
   }
+
 
   // ------------------ CSV IMPORT ------------------
 

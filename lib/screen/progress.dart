@@ -23,18 +23,26 @@ class _ProgressPageState extends State<ProgressPage> {
   }
 
   Future<void> _loadProgress() async {
-    final user = Supabase.instance.client.auth.currentUser;
+    final supabase = Supabase.instance.client;
+    final currentUser = supabase.auth.currentUser;
 
-    if (user == null) {
+    if (currentUser == null) {
       if (mounted) Navigator.pushReplacementNamed(context, '/login');
       return;
     }
 
+    final user = Supabase.instance.client.auth.currentUser;
+    print('Current logged-in email: ${user?.email}');
+    print('Current logged-in UUID: ${user?.id}');
+
+    final userId = currentUser.id;
     final db = DatabaseHelper.instance;
 
     try {
-      final userStats = await db.getUserProgressStats(user.id);
-      final userAttempts = await db.fetchAttemptsByUser(user.id);
+      final userStats = await db.getUserProgressStats(userId);
+      print('get_user_stats() returned: $userStats');
+
+      final userAttempts = await db.fetchAttemptsByUser(userId);
 
       setState(() {
         stats = userStats;
@@ -55,6 +63,8 @@ class _ProgressPageState extends State<ProgressPage> {
   Widget build(BuildContext context) {
     return BaseScaffold(
       currentIndex: 0,
+      pageTitle: 'Your Reading Progress',
+      pageIcon: Icons.insights,
       body: SafeArea(
         child: isLoading
             ? const Center(child: CircularProgressIndicator())
@@ -62,7 +72,6 @@ class _ProgressPageState extends State<ProgressPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildHeader(),
               _buildSummary(),
               const SizedBox(height: 20),
               _buildAttemptsCard(),
@@ -79,27 +88,6 @@ class _ProgressPageState extends State<ProgressPage> {
   }
 
   // ---------------- UI Sections ----------------
-
-  Widget _buildHeader() {
-    return Container(
-      padding: const EdgeInsets.all(16.0),
-      color: Color(AppConfig.primaryColor),
-      child: Row(
-        children: const [
-          Icon(Icons.insights, color: Colors.white, size: 28),
-          SizedBox(width: 12),
-          Text(
-            'Your Reading Progress',
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 
   Widget _buildSummary() {
     final avgScore = (stats['avgScore'] ?? 0).toDouble();
@@ -328,8 +316,7 @@ class _ProgressPageState extends State<ProgressPage> {
             children: [
               Row(
                 children: [
-                  Icon(icon,
-                      color: Color(AppConfig.secondaryColor), size: 24),
+                  Icon(icon, color: Color(AppConfig.secondaryColor), size: 24),
                   const SizedBox(width: 8),
                   Text(
                     title,

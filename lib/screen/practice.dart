@@ -69,31 +69,13 @@ class PracticePage extends StatelessWidget {
   Widget build(BuildContext context) {
     return BaseScaffold(
       currentIndex: 1,
+      pageTitle: 'Practice',
+      pageIcon: Icons.school,
       body: SafeArea(
         child: SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // App Bar
-              Container(
-                padding: const EdgeInsets.all(16.0),
-                color: Color(AppConfig.primaryColor),
-                child: Row(
-                  children: const [
-                    Icon(Icons.school, color: Colors.white, size: 28),
-                    SizedBox(width: 12),
-                    Text(
-                      'Practice',
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(24.0),

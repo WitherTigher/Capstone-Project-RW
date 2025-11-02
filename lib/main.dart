@@ -19,13 +19,14 @@ Future<void> main() async {
   const supabaseAnonKey =
       'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ5aG1nZGdqbHlwaHd5aWxyZmptIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE4NDU1NDksImV4cCI6MjA3NzQyMTU0OX0.rkxUJIWYpoPpCV3azuK7vwenPATJeLjzTdTn13savZM';
 
-  // Only initialize Supabase if it has not already been done
-  if (!Supabase.instance.isInitialized) {
-    await Supabase.initialize(
-      url: supabaseUrl,
-      anonKey: supabaseAnonKey,
-    );
-  }
+  // Initialize Supabase
+  await Supabase.initialize(
+    url: supabaseUrl,
+    anonKey: supabaseAnonKey,
+  );
+
+  // Clear any invalid or expired session to avoid "Invalid Refresh Token" warnings
+  await Supabase.instance.client.auth.signOut();
 
   runApp(const MyApp());
 }
@@ -66,6 +67,8 @@ class _MyAppState extends State<MyApp> {
       );
     }
 
+    final session = Supabase.instance.client.auth.currentSession;
+
     return MaterialApp(
       title: AppConfig.appName,
       debugShowCheckedModeBanner: false,
@@ -77,7 +80,10 @@ class _MyAppState extends State<MyApp> {
         ),
         useMaterial3: true,
       ),
-      initialRoute: '/login',
+
+      // Route safely based on Supabase session
+      home: session == null ? const LoginPage() : const TeacherDashboard(),
+
       routes: {
         '/login': (context) => const LoginPage(),
         '/signup': (context) => const SignUpPage(),

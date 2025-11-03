@@ -1,21 +1,21 @@
-Words,Type
-cat,Phonics
-bat,Phonics
-rat,Phonics
-fish,Phonics
-chat,Phonics
-snail,Phonics
-fan/van,MinimalPairs
-coat/goat,MinimalPairs
-boat/moat,MinimalPairs
-fox/box,MinimalPairs
-bear/pear,MinimalPairs
-seal/zeal,MinimalPairs
-little,Dolch
-once,Dolch
-round,Dolch
-some,Dolch
-thank,Dolch
-laugh,Dolch
-before,Dolch
-under,Dolch
+Words,Type,Example1,Example2,Example3
+cat,Phonics,The cat likes milk.,The Cat has soft fur.,A Cat is a type of pet.
+bat,Phonics,Bat is a freind of batman.,Mr.Bat likes to sleep upside down.,I saw a bat in a cave.
+rat,Phonics,A rat stole my cheese.,The rat ate alot of cheese.,yo cat look like a fat rat!!!
+fish,Phonics,I like to eat fish.,Fish make great pets.,Fish are a common food source.
+chat,Phonics,I like to chat with my neighbors.,I chat with my family often.,I look at chat when watching youtube.
+snail,Phonics,The snail is very slow.,The snail is a common french food.,The snail eat a leaf.
+fan/van,MinimalPairs,I need to buy a fan for my van.,My van does not have a/c so I got a fan.,Van's cost alot but a fan is cheap.
+coat/goat,MinimalPairs,I bought a coat to put on my pet goat.,Goats do not like to wear coats., Goats cannot be coats.
+boat/moat,MinimalPairs,I need to use a boat to move in the castles moat.,The moat around the castle was deep and dark making a boat the only means of passage.,I built a moat so I had a reason to use my boat.
+fox/box,MinimalPairs,My pet fox liked to sleep in a cardboard box.,The cardboard box was taken from the box by a grumpy cat.,My fox now has a brand new box.
+bear/pear,MinimalPairs,A bear is a lot more mean than a pear.,A pear can be eaten by a big bear.,A bear loves to eat honey not apples or fruit or even a sweet pear.
+seal/zeal,MinimalPairs,The baby seal ate his food with so much zeal.,A seal swims with such great zeal after he has his lunch of fish.,The seal had such great zeal when learning to swim.
+little,Dolch,The cat was just a little fat.,There was a little bit of milk left in the carton.,Mike lost a little bit of candy to his mother.
+once,Dolch,There once was a castle here.,I once had a fancy boat.,Once upon a time there was a place called chicago.
+round,Dolch,I forgot to round on my math homework.,A circle is round.,A smile makes the world go round.
+some,Dolch,There are some clouds in the sky.,I have some concerns about my project.,I have some candy to share.
+thank,Dolch,It is proper manners to say thank you.,I said thank you to my mom for making me a grilled cheese.,I said thank you to the doctor for giving me a check up.
+laugh,Dolch,I laugh at the circus clowns joke.,I laugh when I am tickeled,I laugh often when ever anything funny happens.
+before,Dolch,Before I go to sleep I must brush my teeth.,Before going to school I make sure to lock the door.,The land before time was a unique dinosaur movie.
+under,Dolch,I looked under the couch for my wallet.,Jake wishes he could live under the sea.,Susie scored under her grade range in reading.

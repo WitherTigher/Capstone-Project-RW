@@ -1,9 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:readright/config/config.dart';
+import 'package:readright/providers/mock_provider.dart';
 import 'package:readright/widgets/base_scaffold.dart';
+import 'package:readright/models/word.dart';
 
-class WordListPage extends StatelessWidget {
+class WordListPage extends StatefulWidget {
   const WordListPage({super.key});
+  @override
+  State<WordListPage> createState() => _WordListPageState();
+}
+
+class _WordListPageState extends State<WordListPage> {
+  final _provider = MockProvider();
+  late Future<List<Word>> _wordListFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _wordListFuture = _provider.fetchWordList();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -14,16 +29,16 @@ class WordListPage extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // App Bar
+              // Header section (keep all of this)
               Container(
                 padding: const EdgeInsets.all(16.0),
                 color: Color(AppConfig.primaryColor),
-                child: Row(
-                  children: const [
+                child: const Row(
+                  children: [
                     Icon(Icons.feedback, color: Colors.white, size: 28),
                     SizedBox(width: 12),
                     Text(
-                      'Word List ',
+                      'Word List',
                       style: TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
@@ -34,20 +49,8 @@ class WordListPage extends StatelessWidget {
                 ),
               ),
 
-              // Header Section with Word and Status
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(24.0),
-                decoration: const BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.only(
-                    bottomLeft: Radius.circular(24),
-                    bottomRight: Radius.circular(24),
-                  ),
-                ),
-              ),
+              const SizedBox(height: 16),
 
-              // Phoneme Breakdown Card
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16.0),
                 child: Card(
@@ -79,31 +82,42 @@ class WordListPage extends StatelessWidget {
                           ],
                         ),
                         const SizedBox(height: 16),
-                        _buildPhonemeChip('Word:Cat Type:Phonic', true),
-                        const SizedBox(height: 10),
-                        _buildPhonemeChip('Word:Rat Type:Phonic', true),
-                        const SizedBox(height: 10),
-                        _buildPhonemeChip('Word:Fish Type:Phonic', true),
-                        const SizedBox(height: 10),
-                        _buildPhonemeChip('Word:Little Type:Dolch', true),
-                        const SizedBox(height: 10),
-                        _buildPhonemeChip('Word:Round Type:Dolch', true),
-                        const SizedBox(height: 10),
-                        _buildPhonemeChip('Word:Before Type:Dolch', true),
-                        const SizedBox(height: 10),
-                        _buildPhonemeChip(
-                          'Words fan/van Type:MinimalPairs',
-                          true,
-                        ),
-                        const SizedBox(height: 10),
-                        _buildPhonemeChip(
-                          'Words boat/moat Type:MinimalPairs',
-                          true,
-                        ),
-                        const SizedBox(height: 10),
-                        _buildPhonemeChip(
-                          'Words fox/box Type:MinimalPairs',
-                          true,
+
+                        FutureBuilder<List<Word>>(
+                          future: _wordListFuture,
+                          builder: (context, snapshot) {
+                            if (snapshot.connectionState ==
+                                ConnectionState.waiting) {
+                              return const Center(
+                                child: CircularProgressIndicator(),
+                              );
+                            } else if (snapshot.hasError) {
+                              return Text(
+                                'Error: ${snapshot.error}',
+                                style: const TextStyle(color: Colors.red),
+                              );
+                            } else if (!snapshot.hasData ||
+                                snapshot.data!.isEmpty) {
+                              return const Text('No words found.');
+                            }
+
+                            final words = snapshot.data!;
+                            return Column(
+                              children: words
+                                  .map(
+                                    (w) => Padding(
+                                      padding: const EdgeInsets.only(
+                                        bottom: 10.0,
+                                      ),
+                                      child: _buildPhonemeChip(
+                                        'Word: ${w.text} Type: ${w.type}',
+                                        true,
+                                      ),
+                                    ),
+                                  )
+                                  .toList(),
+                            );
+                          },
                         ),
                       ],
                     ),
@@ -113,12 +127,11 @@ class WordListPage extends StatelessWidget {
 
               const SizedBox(height: 24),
 
-              // Action Buttons
+              // Buttons (keep as-is)
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16.0),
                 child: Column(
                   children: [
-                    // Try Again Button
                     SizedBox(
                       width: double.infinity,
                       height: 54,
@@ -148,45 +161,13 @@ class WordListPage extends StatelessWidget {
                     SizedBox(
                       width: double.infinity,
                       height: 54,
-                      child: ElevatedButton.icon(
-                        onPressed: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Cannot edit words Right now'),
-                              duration: Duration(seconds: 2),
-                            ),
-                          );
-                        },
-                        icon: const Icon(Icons.arrow_forward, size: 22),
-                        label: const Text(
-                          'Edit Word List',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Color(AppConfig.primaryColor),
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          elevation: 2,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    // Back to Word List Button
-                    SizedBox(
-                      width: double.infinity,
-                      height: 54,
                       child: OutlinedButton.icon(
                         onPressed: () {
                           Navigator.pushNamed(context, '/teacherDashboard');
                         },
                         icon: const Icon(Icons.list_alt, size: 22),
                         label: const Text(
-                          'Go to Teacher DashBoard',
+                          'Go to Teacher Dashboard',
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
@@ -208,7 +189,7 @@ class WordListPage extends StatelessWidget {
                 ),
               ),
 
-              const SizedBox(height: 100), // Space for bottom navigation
+              const SizedBox(height: 100),
             ],
           ),
         ),
@@ -216,6 +197,7 @@ class WordListPage extends StatelessWidget {
     );
   }
 
+  // Keep your chip builder helper
   Widget _buildPhonemeChip(String phoneme, bool isCorrect) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),

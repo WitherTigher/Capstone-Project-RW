@@ -63,10 +63,6 @@ import 'package:stts/stts.dart';
 //   });
 // }
 
-
-
-
-
 class PracticePage extends StatefulWidget {
   const PracticePage({Key? key}) : super(key: key);
 
@@ -77,7 +73,7 @@ class PracticePage extends StatefulWidget {
 class _PracticePageState extends State<PracticePage> {
   final Stt _stt = Stt();
   late StreamSubscription<SttState> _stateSub;
-  late StreamSubscription<String> _resultSub;
+  late StreamSubscription<SttRecognition> _resultSub;
 
   String _recognizedText = '';
   bool _isListening = false;
@@ -107,15 +103,15 @@ class _PracticePageState extends State<PracticePage> {
 
     // Listen for results
     _resultSub = _stt.onResultChanged.listen(
-          (result) {
+          (SttRecognition result) {
         setState(() {
-          _recognizedText = result as String;
+          _recognizedText = result.text;
         });
       },
       onError: (err) {
         debugPrint("STT Result error: $err");
       },
-    ) as StreamSubscription<String>;
+    );
   }
 
   Future<void> _toggleRecording() async {
@@ -248,4 +244,3 @@ class _PracticePageState extends State<PracticePage> {
     );
   }
 }
-

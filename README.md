@@ -28,6 +28,10 @@ Teachers can assign custom word lists, review results, and optionally access stu
 ```
 lib/
 │
+│── assets/
+│   └── logo.png
+│   └── seed_words.csv
+│
 ├── config/                # App-wide configuration values
 │   └── config.dart
 │
@@ -35,7 +39,12 @@ lib/
 │   └── [placeholder]
 │
 ├── models/                # Data models (e.g., Attempt, Word, User)
-│   └── [placeholder]
+│   └── attempt.dart
+│   └── word.dart
+│
+├── providers/                # Data models (e.g., Attempt, Word, User)
+│   └── mocK_provider.dart
+│   └── provider_interface.dart
 │
 ├── screen/                # UI pages and main app flows
 │   ├── feedback.dart          # Feedback view after practice
@@ -46,7 +55,7 @@ lib/
 │   └── login.dart             # Authentication page
 │
 ├── services/              # Business logic and backend communication
-│   └── [placeholder]
+│   └── databaseHelper.dart
 │
 ├── widgets/               # Reusable UI components
 │   ├── base_scaffold.dart     # Common scaffold with bottom navigation

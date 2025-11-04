@@ -1,8 +1,12 @@
+import 'dart:async';
+
 import 'package:readright/config/config.dart';
 import 'package:flutter/material.dart';
 import 'package:readright/widgets/base_scaffold.dart';
 import 'package:readright/services/databaseHelper.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:flutter/material.dart';
+import 'package:stts/stts.dart';
 
 /// MOCK FUNCTION TO UPLOAD RECORDING TO SUPABASE STORAGE
 // Future<String?> uploadRecording(File file, String userId) async {
@@ -62,8 +66,86 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 
 
-class PracticePage extends StatelessWidget {
+
+class PracticePage extends StatefulWidget {
   const PracticePage({Key? key}) : super(key: key);
+
+  @override
+  State<PracticePage> createState() => _PracticePageState();
+}
+
+class _PracticePageState extends State<PracticePage> {
+  final Stt _stt = Stt();
+  late StreamSubscription<SttState> _stateSub;
+  late StreamSubscription<String> _resultSub;
+
+  String _recognizedText = '';
+  bool _isListening = false;
+  bool _hasPermission = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _initSTT();
+  }
+
+  Future<void> _initSTT() async {
+    // Request permission
+    _hasPermission = await _stt.hasPermission();
+
+    // Listen for state changes (start/stop)
+    _stateSub = _stt.onStateChanged.listen(
+          (speechState) {
+        setState(() {
+          _isListening = (speechState == SttState.start);
+        });
+      },
+      onError: (err) {
+        debugPrint("STT State error: $err");
+      },
+    );
+
+    // Listen for results
+    _resultSub = _stt.onResultChanged.listen(
+          (result) {
+        setState(() {
+          _recognizedText = result as String;
+        });
+      },
+      onError: (err) {
+        debugPrint("STT Result error: $err");
+      },
+    ) as StreamSubscription<String>;
+  }
+
+  Future<void> _toggleRecording() async {
+    if (!_hasPermission) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Microphone permission not granted.'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+      return;
+    }
+
+    if (_isListening) {
+      await _stt.stop();
+    } else {
+      setState(() {
+        _recognizedText = '';
+      });
+      await _stt.start();
+    }
+  }
+
+  @override
+  void dispose() {
+    _stateSub.cancel();
+    _resultSub.cancel();
+    _stt.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -88,13 +170,14 @@ class PracticePage extends StatelessWidget {
                 ),
                 child: Column(
                   children: [
-                    // Success Icon
                     Icon(
-                      Icons.mic_rounded,
+                      _isListening ? Icons.mic : Icons.mic_none,
                       size: 48,
+                      color: _isListening
+                          ? Color(AppConfig.primaryColor)
+                          : Colors.grey[700],
                     ),
                     const SizedBox(height: 16),
-                    // Word Practiced
                     const Text(
                       'cat',
                       style: TextStyle(
@@ -118,19 +201,14 @@ class PracticePage extends StatelessWidget {
                       width: double.infinity,
                       height: 54,
                       child: ElevatedButton.icon(
-                        onPressed: () {
-                          // TODO: Implement next word logic
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Next word feature coming soon!'),
-                              duration: Duration(seconds: 2),
-                            ),
-                          );
-                        },
-                        icon: const Icon(Icons.play_circle, size: 22),
-                        label: const Text(
-                          'Record Word',
-                          style: TextStyle(
+                        onPressed: _toggleRecording,
+                        icon: Icon(
+                          _isListening ? Icons.stop_circle : Icons.mic_rounded,
+                          size: 22,
+                        ),
+                        label: Text(
+                          _isListening ? 'Stop Recording' : 'Record Word',
+                          style: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
                           ),
@@ -145,92 +223,29 @@ class PracticePage extends StatelessWidget {
                         ),
                       ),
                     ),
-                    const SizedBox(height: 12),
+
+                    const SizedBox(height: 24),
+
+                    // Show recognized text
+                    if (_recognizedText.isNotEmpty)
+                      Text(
+                        'You said: $_recognizedText',
+                        style: const TextStyle(
+                          fontSize: 18,
+                          color: Colors.black87,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
                   ],
                 ),
               ),
 
-              const SizedBox(height: 100), // Space for bottom navigation
+              const SizedBox(height: 100),
             ],
           ),
         ),
       ),
     );
   }
-
-  Widget _buildPhonemeChip(String phoneme, bool isCorrect) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      decoration: BoxDecoration(
-        color: isCorrect
-            ? Color(AppConfig.primaryColor).withOpacity(0.1)
-            : Colors.red.shade50,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: isCorrect
-              ? Color(AppConfig.primaryColor)
-              : Colors.red.shade300,
-          width: 2,
-        ),
-      ),
-      child: Row(
-        children: [
-          Icon(
-            isCorrect ? Icons.check_circle : Icons.cancel,
-            color: isCorrect
-                ? Color(AppConfig.primaryColor)
-                : Colors.red.shade600,
-            size: 24,
-          ),
-          const SizedBox(width: 12),
-          Text(
-            phoneme,
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: isCorrect ? const Color(0xFF2D3748) : Colors.red.shade900,
-            ),
-          ),
-          const Spacer(),
-          Text(
-            isCorrect ? 'Correct' : 'Try again',
-            style: TextStyle(
-              fontSize: 14,
-              color: isCorrect
-                  ? Color(AppConfig.primaryColor)
-                  : Colors.red.shade700,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTipItem(String tip) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8.0),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(
-            Icons.check_circle_outline,
-            size: 18,
-            color: Color(AppConfig.primaryColor),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              tip,
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey.shade700,
-                height: 1.4,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 }
+

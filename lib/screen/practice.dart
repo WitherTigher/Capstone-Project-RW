@@ -8,6 +8,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter/material.dart';
 import 'package:stts/stts.dart';
 
+import 'package:flutter/foundation.dart';
+
 /// MOCK FUNCTION TO UPLOAD RECORDING TO SUPABASE STORAGE
 // Future<String?> uploadRecording(File file, String userId) async {
 //   final supabase = Supabase.instance.client;
@@ -61,6 +63,153 @@ import 'package:stts/stts.dart';
 //     'feedback': feedback,
 //     'recording_url': url, // <-- this is the url to the uploaded file
 //   });
+// }
+
+// import 'dart:async';
+//
+// import 'package:flutter/material.dart';
+// import 'package:stts/stts.dart';
+
+// class PracticePage extends StatefulWidget {
+//   const PracticePage({super.key});
+//
+//   @override
+//   State<PracticePage> createState() => _SttPageState();
+// }
+//
+// class _SttPageState extends State<PracticePage> {
+//   final _stt = Stt();
+//   bool? _hasPermission;
+//   String _text = '';
+//   String? _error;
+//   StreamSubscription<SttState>? _stateSubscription;
+//   StreamSubscription<SttRecognition>? _resultSubscription;
+//   bool _started = false;
+//   final _lang = 'en-US';
+//
+//   @override
+//   void initState() {
+//     super.initState();
+//
+//     _stt.isSupported().then((supported) {
+//       debugPrint('Supported: $supported');
+//     });
+//
+//     _stt.getLanguages().then((loc) {
+//       debugPrint('Supported languages: $loc');
+//
+//       if (loc.contains(_lang)) {
+//         // _stt.setLanguage(_lang).then((_) {
+//           _stt.getLanguage().then((lang) {
+//             debugPrint('Current language: $lang');
+//           });
+//         // });
+//       }
+//     });
+//
+//     // _stt.android?.onDownloadModelEnd(
+//     //   (language, errCode) {
+//     //     debugPrint('Language DL: $language, error: $errCode');
+//     //   },
+//     // );
+//     // print("download start");
+//     // _stt.android?.downloadModel('en-US');
+//
+//     // _stt.android?.muteSystemSounds(true);
+//
+//     // _stt.ios?.manageAudioSession(true);
+//     // _stt.ios?.setAudioSessionCategory();
+//     // _stt.ios?.setAudioSessionActive(true);
+//
+//     _stateSubscription = _stt.onStateChanged.listen(
+//           (sttState) {
+//         setState(() {
+//           print("why");
+//           print(sttState);
+//           _started = sttState == SttState.start;
+//         });
+//       },
+//       onError: (err) {
+//         debugPrint(err.toString());
+//         setState(() => _error = err.toString());
+//       },
+//     );
+//
+//     _stt.onResultChanged.listen((r) {
+//       print(r.text);
+//
+//     });
+//
+//     // _resultSubscription = _stt.onResultChanged.listen((result) {
+//     //   print('${result.text} (isFinal: ${result.isFinal})');
+//     //   setState(() => _text = result.text);
+//     // });
+//
+//
+//   }
+//
+//   @override
+//   void dispose() {
+//     super.dispose();
+//
+//     _stateSubscription?.cancel();
+//     _resultSubscription?.cancel();
+//
+//     _stt.dispose();
+//   }
+//
+//   @override
+//   Widget build(BuildContext context) {
+//     return Scaffold(
+//       appBar: AppBar(title: const Text('Speech to text')),
+//       body: Center(
+//         child: Column(
+//           mainAxisAlignment: MainAxisAlignment.center,
+//           children: [
+//             TextButton(
+//               onPressed: () async {
+//                 final result = await _stt.hasPermission();
+//                 setState(() => _hasPermission = result);
+//               },
+//               child: Text('Request permission'),
+//             ),
+//             Text('Has permission: ${_hasPermission ?? 'unknown'}'),
+//             Row(
+//               mainAxisAlignment: MainAxisAlignment.center,
+//               children: [
+//                 TextButton(
+//                   onPressed: _started ? null : () => _stt.start(SttRecognitionOptions(offline: false)),
+//                   child: Text('Start'),
+//                 ),
+//                 TextButton(
+//                   onPressed: _started
+//                       ? () {
+//                     setState(() {
+//                       _text = 'pain';
+//                       _error = null;
+//                     });
+//                     _stt.stop();
+//                   }
+//                       : null,
+//                   child: Text('Stop'),
+//                 ),
+//               ],
+//             ),
+//             Expanded(child: Text(_text)),
+//             if (defaultTargetPlatform == TargetPlatform.windows) ...[
+//               TextButton(
+//                 onPressed: _started
+//                     ? null
+//                     : () => _stt.windows?.showTrainingUI(['Bonjour']),
+//                 child: Text('Show training UI'),
+//               ),
+//             ],
+//             Text(_error ?? ''),
+//           ],
+//         ),
+//       ),
+//     );
+//   }
 // }
 
 class PracticePage extends StatefulWidget {
@@ -131,7 +280,7 @@ class _PracticePageState extends State<PracticePage> {
       setState(() {
         _recognizedText = '';
       });
-      await _stt.start();
+      await _stt.start(SttRecognitionOptions(offline: false));
     }
   }
 

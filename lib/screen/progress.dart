@@ -3,6 +3,7 @@ import 'package:readright/config/config.dart';
 import 'package:readright/widgets/base_scaffold.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:readright/services/databaseHelper.dart';
+import 'package:intl/intl.dart';
 
 class ProgressPage extends StatefulWidget {
   const ProgressPage({super.key});
@@ -56,6 +57,16 @@ class _ProgressPageState extends State<ProgressPage> {
         );
       }
       setState(() => isLoading = false);
+    }
+  }
+
+  String formatDate(String? dateStr) {
+    if (dateStr == null || dateStr.isEmpty) return 'N/A';
+    try {
+      final date = DateTime.parse(dateStr);
+      return DateFormat('MMM d, yyyy • h:mm a').format(date);
+    } catch (_) {
+      return dateStr;
     }
   }
 
@@ -158,7 +169,7 @@ class _ProgressPageState extends State<ProgressPage> {
                 ? (stats['avgScore'] as num).toStringAsFixed(1)
                 : '0',
           ),
-          _buildStatRow('Last Attempt', stats['lastAttempt'] ?? 'N/A'),
+          _buildStatRow('Last Attempt', formatDate(stats['lastAttempt'])),
         ],
       ),
     );

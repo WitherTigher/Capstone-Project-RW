@@ -88,8 +88,6 @@ class _ProgressPageState extends State<ProgressPage> {
               _buildAttemptsCard(),
               const SizedBox(height: 16),
               _buildStatsCard(),
-              const SizedBox(height: 16),
-              _buildExportButton(),
               const SizedBox(height: 100),
             ],
           ),
@@ -171,41 +169,6 @@ class _ProgressPageState extends State<ProgressPage> {
           ),
           _buildStatRow('Last Attempt', formatDate(stats['lastAttempt'])),
         ],
-      ),
-    );
-  }
-
-  Widget _buildExportButton() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0),
-      child: SizedBox(
-        width: double.infinity,
-        height: 54,
-        child: ElevatedButton.icon(
-          onPressed: () {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('CSV export feature coming soon.'),
-                duration: Duration(seconds: 2),
-              ),
-            );
-          },
-          icon: const Icon(Icons.download),
-          label: const Text(
-            'Export Progress (CSV)',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Color(AppConfig.primaryColor),
-            foregroundColor: Colors.white,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-          ),
-        ),
       ),
     );
   }

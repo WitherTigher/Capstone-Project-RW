@@ -84,7 +84,6 @@ class PracticePage extends StatefulWidget {
 
 class _PracticePageState extends State<PracticePage> {
   final record = AudioRecorder();
-  // final FlutterSoundRecorder _recorder = FlutterSoundRecorder();
 
   bool _isRecording = false;
   bool _loading = true;
@@ -92,8 +91,6 @@ class _PracticePageState extends State<PracticePage> {
   String? _error;
 
   Word? _currentWord;
-
-  // assessment output
   AssessmentResult? _assessmentResult;
 
   @override
@@ -103,9 +100,9 @@ class _PracticePageState extends State<PracticePage> {
     _loadNextWord();
   }
 
-  // ---------------------------------------------------------------------------
+  // ----------------------------------------------------------------------------
   // INIT recorder
-  // ---------------------------------------------------------------------------
+  // ----------------------------------------------------------------------------
   Future<void> _initRecording() async {
     final mic = await Permission.microphone.request();
 
@@ -115,12 +112,11 @@ class _PracticePageState extends State<PracticePage> {
     }
 
     _hasPermission = true;
-    // await _recorder.openRecorder();
   }
 
-  // ---------------------------------------------------------
+  // ----------------------------------------------------------------------------
   // CURRENT LIST
-  // ---------------------------------------------------------
+  // ----------------------------------------------------------------------------
   Future<Map<String, dynamic>?> _fetchCurrentListRecord(String userId) async {
     debugPrint('[Practice] Checking current list for $userId');
 
@@ -150,17 +146,20 @@ class _PracticePageState extends State<PracticePage> {
     return null;
   }
 
-  // ---------------------------------------------------------
+  // ----------------------------------------------------------------------------
   // NEXT UNMASTERED WORD
-  // ---------------------------------------------------------
+  // ----------------------------------------------------------------------------
   Future<Map<String, dynamic>?> _fetchUnmasteredWord(
       String userId, String listId) async {
     final mastered = await _masteredWordIdList(userId);
 
     List<dynamic> rows;
 
+    print('in here');
+    print(mastered);
+
     if (mastered.isEmpty) {
-      // first word in list
+      print('empty');
       rows = await Supabase.instance.client
           .from('words')
           .select('id,text,type,sentences')
@@ -170,12 +169,14 @@ class _PracticePageState extends State<PracticePage> {
       final inList = mastered.map((id) => '"$id"').join(',');
       final filterValue = '($inList)';
 
+      print('hi');
       rows = await Supabase.instance.client
           .from('words')
           .select('id,text,type,sentences')
           .eq('list_id', listId)
           .not('id', 'in', filterValue)
           .limit(1);
+      print('rows');
     }
 
     if (rows.isEmpty) return null;
@@ -189,9 +190,9 @@ class _PracticePageState extends State<PracticePage> {
     };
   }
 
-  // ---------------------------------------------------------
-  // MASTERED WORDS
-  // ---------------------------------------------------------
+  // ----------------------------------------------------------------------------
+  // MASTERED WORDS LIST
+  // ----------------------------------------------------------------------------
   Future<List<String>> _masteredWordIdList(String userId) async {
     final rows = await Supabase.instance.client
         .from('mastered_words')
@@ -204,16 +205,51 @@ class _PracticePageState extends State<PracticePage> {
         .toList();
   }
 
-  // ---------------------------------------------------------------------------
-  // LOAD NEXT WORD (keep your existing logic)
-  // ---------------------------------------------------------------------------
+  // ----------------------------------------------------------------------------
+  // INSERT ATTEMPT
+  // ----------------------------------------------------------------------------
+  Future<void> _storeAttempt({
+    required String userId,
+    required String wordId,
+    required double score,
+    String? feedback,
+  }) async {
+    await Supabase.instance.client.from('attempts').insert({
+      'user_id': userId,
+      'word_id': wordId,
+      'score': score,
+      'feedback': feedback ?? '',
+      'timestamp': DateTime.now().toIso8601String(),
+    });
+
+    debugPrint('[Practice] Attempt stored for $wordId (score=$score)');
+  }
+
+  // ----------------------------------------------------------------------------
+  // INSERT MASTERED WORD
+  // ----------------------------------------------------------------------------
+  Future<void> _storeMasteredWord({
+    required String userId,
+    required String wordId,
+  }) async {
+    await Supabase.instance.client.from('mastered_words').insert({
+      'user_id': userId,
+      'word_id': wordId,
+      'mastered_at': DateTime.now().toIso8601String(),
+    });
+
+    debugPrint('[Practice] MASTERED → $wordId added to mastered_words');
+  }
+
+  // ----------------------------------------------------------------------------
+  // LOAD NEXT WORD
+  // ----------------------------------------------------------------------------
   Future<void> _loadNextWord() async {
     _assessmentResult = null;
     _error = null;
     _loading = true;
     setState(() {});
 
-    // ── your existing word-fetching logic unchanged ──────────────────────────
     final user = Supabase.instance.client.auth.currentUser;
     if (user == null) {
       _error = 'User not logged in.';
@@ -256,9 +292,9 @@ class _PracticePageState extends State<PracticePage> {
     setState(() {});
   }
 
-  // ---------------------------------------------------------------------------
-  // RECORD / STOP
-  // ---------------------------------------------------------------------------
+  // ----------------------------------------------------------------------------
+  // RECORDING LOGIC
+  // ----------------------------------------------------------------------------
   Future<void> _toggleRecording() async {
     if (!_hasPermission) {
       ScaffoldMessenger.of(context)
@@ -293,11 +329,10 @@ class _PracticePageState extends State<PracticePage> {
     await _sendToAssessmentServer(File(path));
   }
 
-  // ---------------------------------------------------------------------------
-  // SEND TO FLASK SERVER
-  // ---------------------------------------------------------------------------
+  // ----------------------------------------------------------------------------
+  // SEND TO FLASK SERVER → STORE ATTEMPT → CHECK MASTER
+  // ----------------------------------------------------------------------------
   Future<void> _sendToAssessmentServer(File wavFile) async {
-
     if (_currentWord == null) return;
 
     final uri = Uri.parse("http://10.0.2.2:5001/assess");
@@ -308,12 +343,43 @@ class _PracticePageState extends State<PracticePage> {
 
     final response = await request.send();
 
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null) return;
+
     if (response.statusCode != 200) {
-      _assessmentResult = null; // TODO: handle error lol!!
-    } else {
-      final body = await response.stream.bytesToString();
-      final decoded = jsonDecode(body);
-      _assessmentResult = AssessmentResult.fromJson(decoded);
+      _assessmentResult = null;
+      setState(() {});
+      return;
+    }
+
+    final body = await response.stream.bytesToString();
+    final decoded = jsonDecode(body);
+    _assessmentResult = AssessmentResult.fromJson(decoded);
+
+    // -----------------------
+    // STORE ATTEMPT IN DB
+    // -----------------------
+    final wordId = _currentWord!.id;
+    final score = _assessmentResult?.accuracy ?? 0;
+
+    await _storeAttempt(
+      userId: user.id,
+      wordId: wordId,
+      score: score,
+      feedback: "Good job"
+    );
+
+    // -----------------------
+    // MASTER WORD IF HIGH ENOUGH
+    // -----------------------
+    if (score >= 90) {
+      await _storeMasteredWord(
+        userId: user.id,
+        wordId: wordId,
+      );
+
+      // And immediately load next word
+      // await _loadNextWord();
     }
 
     setState(() {});
@@ -325,7 +391,7 @@ class _PracticePageState extends State<PracticePage> {
     super.dispose();
   }
 
-  // ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
   // UI
   // ---------------------------------------------------------------------------
   @override

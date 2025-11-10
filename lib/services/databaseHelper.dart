@@ -2,6 +2,8 @@ import 'dart:io';
 import 'package:csv/csv.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:path/path.dart' as p;
+import 'package:flutter/services.dart' show rootBundle;
+
 
 class DatabaseHelper {
   static final DatabaseHelper instance = DatabaseHelper._init();
@@ -60,10 +62,20 @@ class DatabaseHelper {
 
   // ------------------ WORD HELPERS ------------------
 
-  Future<String?> insertWord(String listId, String text, String type) async {
+  Future<String?> insertWord(
+      String listId,
+      String text,
+      String type, {
+        List<String>? sentences,
+      }) async {
     final res = await client
         .from('words')
-        .insert({'list_id': listId, 'text': text, 'type': type})
+        .insert({
+      'list_id': listId,
+      'text': text,
+      'type': type,
+      'sentences': sentences ?? [],
+    })
         .select('id')
         .maybeSingle();
     return res?['id'];
@@ -130,19 +142,11 @@ class DatabaseHelper {
   // ------------------ CSV IMPORT ------------------
 
   Future<void> importSeedWords({String title = 'Seed Word List'}) async {
-    final projectDir = Directory.current.path;
-    final filePath = p.join(projectDir, 'lib', 'assets', 'seed_words.csv');
-
-    final file = File(filePath);
-    if (!await file.exists()) {
-      throw Exception('CSV not found at $filePath');
-    }
-
-    final csvData = await file.readAsString();
+    final csvData = await rootBundle.loadString('lib/assets/seed_words.csv');
     final rows = const CsvToListConverter(eol: '\n').convert(csvData);
 
     if (rows.isEmpty || rows[0].length < 2) {
-      throw Exception('Invalid CSV format. Expected headers: Words,Type');
+      throw Exception('Invalid CSV format. Expected headers: Words,Type,Example1...');
     }
 
     final existing = await getWordListByTitle(title);
@@ -157,13 +161,23 @@ class DatabaseHelper {
     for (int i = 1; i < rows.length; i++) {
       final word = rows[i][0]?.toString().trim();
       final type = rows[i][1]?.toString().trim();
+
+      // Collect example sentences
+      final examples = <String>[];
+      for (int j = 2; j < rows[i].length; j++) {
+        final ex = rows[i][j]?.toString().trim();
+        if (ex != null && ex.isNotEmpty) examples.add(ex);
+      }
+
       if (word != null && word.isNotEmpty && type != null && type.isNotEmpty) {
-        await insertWord(listId, word, type);
+        await insertWord(listId, word, type, sentences: examples);
       }
     }
 
-    print('Imported ${rows.length - 1} words into "$title"');
+    print('Imported ${rows.length - 1} words with example sentences into "$title"');
   }
+
+
 
   // ------------------ UTILITIES ------------------
 

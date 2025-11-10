@@ -1,16 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:readright/config/config.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'navbar.dart';
+import 'teacher_navbar.dart';
 
-
-class BaseScaffold extends StatefulWidget {
+class TeacherBaseScaffold extends StatefulWidget {
   final Widget body;
   final int currentIndex;
   final String? pageTitle;
   final IconData? pageIcon;
 
-  const BaseScaffold({
+  const TeacherBaseScaffold({
     super.key,
     required this.body,
     required this.currentIndex,
@@ -19,34 +18,31 @@ class BaseScaffold extends StatefulWidget {
   });
 
   @override
-  State<BaseScaffold> createState() => _BaseScaffoldState();
+  State<TeacherBaseScaffold> createState() => _TeacherBaseScaffoldState();
 }
 
-class _BaseScaffoldState extends State<BaseScaffold> {
+class _TeacherBaseScaffoldState extends State<TeacherBaseScaffold> {
   void _onItemTapped(int index) {
+    if (!mounted) return;
     switch (index) {
       case 0:
-        Navigator.pushReplacementNamed(context, '/progress');
+        Navigator.pushReplacementNamed(context, '/teacherDashboard');
         break;
       case 1:
-        Navigator.pushReplacementNamed(context, '/practice');
+        Navigator.pushReplacementNamed(context, '/teacherWordLists');
         break;
       case 2:
-        Navigator.pushReplacementNamed(context, '/feedback');
+        Navigator.pushReplacementNamed(context, '/teacherStudents');
         break;
       case 3:
-        Navigator.pushReplacementNamed(context, '/teacherDashboard');
+        Navigator.pushReplacementNamed(context, '/teacherSettings');
         break;
     }
   }
 
   Future<void> _logout() async {
     final supabase = Supabase.instance.client;
-
-    // Signs out both server-side and clears cached session
     await supabase.auth.signOut();
-
-    // Force clear locally stored session manually
     await supabase.auth.signOut(scope: SignOutScope.local);
 
     if (mounted) {
@@ -66,7 +62,7 @@ class _BaseScaffoldState extends State<BaseScaffold> {
               Icon(widget.pageIcon, color: Colors.white, size: 26),
             if (widget.pageIcon != null) const SizedBox(width: 8),
             Text(
-              widget.pageTitle ?? AppConfig.appName,
+              widget.pageTitle ?? 'Teacher Portal',
               style: const TextStyle(
                 color: Colors.white,
                 fontSize: 22,
@@ -81,11 +77,11 @@ class _BaseScaffoldState extends State<BaseScaffold> {
             icon: const Icon(Icons.logout, color: Colors.white),
             tooltip: 'Logout',
           ),
-          SizedBox(width: 10),
+          const SizedBox(width: 10),
         ],
       ),
       body: widget.body,
-      bottomNavigationBar: NavBar(
+      bottomNavigationBar: TeacherNavBar(
         currentIndex: widget.currentIndex,
         onTap: _onItemTapped,
       ),

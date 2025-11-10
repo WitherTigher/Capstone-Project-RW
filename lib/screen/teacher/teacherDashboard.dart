@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:readright/config/config.dart';
-import 'package:readright/widgets/base_scaffold.dart';
+import 'package:readright/widgets/teacher_base_scaffold.dart';
 
 class TeacherDashboard extends StatelessWidget {
   const TeacherDashboard({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return BaseScaffold(
-      currentIndex: 3,
+    return TeacherBaseScaffold(
+      currentIndex: 0,
       pageTitle: 'Class Dashboard',
       pageIcon: Icons.dashboard,
       body: SafeArea(

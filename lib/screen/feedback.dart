@@ -1,14 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:readright/config/config.dart';
-import 'package:readright/widgets/base_scaffold.dart';
+import 'package:readright/widgets/student_base_scaffold.dart';
+import 'package:flutter/material.dart';
+
 
 class FeedbackPage extends StatelessWidget {
   const FeedbackPage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return BaseScaffold(
-      currentIndex: 2,
+    return StudentBaseScaffold(
+      currentIndex: 4,
       pageTitle: 'Practice Feedback',
       pageIcon: Icons.feedback,
       body: SafeArea(

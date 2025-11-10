@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:readright/config/config.dart';
-import 'package:readright/widgets/base_scaffold.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:readright/services/databaseHelper.dart';
 import 'package:intl/intl.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:readright/config/config.dart';
+import 'package:readright/services/databaseHelper.dart';
+import 'package:readright/widgets/student_base_scaffold.dart';
 
 class ProgressPage extends StatefulWidget {
   const ProgressPage({super.key});
@@ -26,24 +26,14 @@ class _ProgressPageState extends State<ProgressPage> {
   Future<void> _loadProgress() async {
     final supabase = Supabase.instance.client;
     final currentUser = supabase.auth.currentUser;
-
-    if (currentUser == null) {
-      if (mounted) Navigator.pushReplacementNamed(context, '/login');
-      return;
-    }
-
-    final user = Supabase.instance.client.auth.currentUser;
-    print('Current logged-in email: ${user?.email}');
-    print('Current logged-in UUID: ${user?.id}');
-
-    final userId = currentUser.id;
-    final db = DatabaseHelper.instance;
+    if (currentUser == null) return;
 
     try {
-      final userStats = await db.getUserProgressStats(userId);
-      print('get_user_stats() returned: $userStats');
+      final db = DatabaseHelper.instance;
+      final userStats = await db.getUserProgressStats(currentUser.id);
+      final userAttempts = await db.fetchAttemptsByUser(currentUser.id);
 
-      final userAttempts = await db.fetchAttemptsByUser(userId);
+      if (!mounted) return;
 
       setState(() {
         stats = userStats;
@@ -51,11 +41,10 @@ class _ProgressPageState extends State<ProgressPage> {
         isLoading = false;
       });
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error loading progress: $e')),
-        );
-      }
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error loading progress: $e')),
+      );
       setState(() => isLoading = false);
     }
   }
@@ -72,9 +61,9 @@ class _ProgressPageState extends State<ProgressPage> {
 
   @override
   Widget build(BuildContext context) {
-    return BaseScaffold(
-      currentIndex: 0,
-      pageTitle: 'Your Reading Progress',
+    return StudentBaseScaffold(
+      currentIndex: 3,
+      pageTitle: 'Progress',
       pageIcon: Icons.insights,
       body: SafeArea(
         child: isLoading
@@ -96,39 +85,26 @@ class _ProgressPageState extends State<ProgressPage> {
     );
   }
 
-  // ---------------- UI Sections ----------------
+  // ---------- UI Components ----------
 
   Widget _buildSummary() {
     final avgScore = (stats['avgScore'] ?? 0).toDouble();
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(24.0),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.only(
-          bottomLeft: Radius.circular(24),
-          bottomRight: Radius.circular(24),
-        ),
-      ),
+      padding: const EdgeInsets.all(24),
+      color: Colors.white,
       child: Column(
         children: [
           const Text(
             'Overall Performance',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF2D3748),
-            ),
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 12),
           _buildAverageScore(avgScore.round()),
           const SizedBox(height: 8),
           Text(
             'Average Score (${stats['totalAttempts'] ?? 0} attempts)',
-            style: TextStyle(
-              color: Colors.grey.shade600,
-              fontWeight: FontWeight.w500,
-            ),
+            style: TextStyle(color: Colors.grey.shade600),
           ),
         ],
       ),
@@ -142,11 +118,11 @@ class _ProgressPageState extends State<ProgressPage> {
       content: attempts.isEmpty
           ? const Text('No attempts yet.')
           : Column(
-        children: attempts.take(5).map((attempt) {
+        children: attempts.take(5).map((a) {
           final wordText =
-              attempt['words']?['text'] ?? attempt['word_text'] ?? 'Unknown';
-          final score = attempt['score'] ?? 0;
-          final feedback = attempt['feedback'] ?? 'No feedback';
+              a['words']?['text'] ?? a['word_text'] ?? 'Unknown';
+          final score = a['score'] ?? 0;
+          final feedback = a['feedback'] ?? 'No feedback';
           return _buildAttemptRow(wordText, score, feedback);
         }).toList(),
       ),
@@ -158,7 +134,6 @@ class _ProgressPageState extends State<ProgressPage> {
       icon: Icons.emoji_events,
       title: 'Stats',
       content: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildStatRow('Total Attempts', '${stats['totalAttempts'] ?? 0}'),
           _buildStatRow(
@@ -173,104 +148,6 @@ class _ProgressPageState extends State<ProgressPage> {
     );
   }
 
-  // ---------------- UI Helper Widgets ----------------
-
-  Widget _buildAverageScore(int score) {
-    return Container(
-      width: 100,
-      height: 100,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: Color(AppConfig.primaryColor).withOpacity(0.15),
-        border: Border.all(
-          color: Color(AppConfig.primaryColor),
-          width: 4,
-        ),
-      ),
-      child: Center(
-        child: Text(
-          '$score',
-          style: TextStyle(
-            fontSize: 36,
-            fontWeight: FontWeight.bold,
-            color: Color(AppConfig.primaryColor),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildAttemptRow(String word, int score, String feedback) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
-      child: Row(
-        children: [
-          Expanded(
-            flex: 3,
-            child: Text(
-              word,
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-                color: Color(0xFF2D3748),
-              ),
-            ),
-          ),
-          Expanded(
-            flex: 2,
-            child: Text(
-              '$score',
-              style: TextStyle(
-                fontSize: 18,
-                color: Color(AppConfig.primaryColor),
-                fontWeight: FontWeight.bold,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ),
-          Expanded(
-            flex: 5,
-            child: Text(
-              feedback,
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey.shade600,
-              ),
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStatRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6.0),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 16,
-              color: Colors.grey.shade700,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: Color(AppConfig.primaryColor),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildCard({
     required IconData icon,
     required String title,
@@ -280,23 +157,21 @@ class _ProgressPageState extends State<ProgressPage> {
       padding: const EdgeInsets.symmetric(horizontal: 16.0),
       child: Card(
         elevation: 3,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         child: Padding(
-          padding: const EdgeInsets.all(20.0),
+          padding: const EdgeInsets.all(20),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 children: [
-                  Icon(icon, color: Color(AppConfig.secondaryColor), size: 24),
+                  Icon(icon, color: Color(AppConfig.secondaryColor)),
                   const SizedBox(width: 8),
                   Text(
                     title,
                     style: const TextStyle(
+                      fontWeight: FontWeight.bold,
                       fontSize: 18,
-                      fontWeight: FontWeight.w600,
                       color: Color(0xFF2D3748),
                     ),
                   ),
@@ -310,4 +185,79 @@ class _ProgressPageState extends State<ProgressPage> {
       ),
     );
   }
+
+  Widget _buildAverageScore(int score) => Container(
+    width: 100,
+    height: 100,
+    decoration: BoxDecoration(
+      shape: BoxShape.circle,
+      color: Color(AppConfig.primaryColor).withOpacity(0.1),
+      border: Border.all(color: Color(AppConfig.primaryColor), width: 4),
+    ),
+    child: Center(
+      child: Text(
+        '$score',
+        style: TextStyle(
+          fontSize: 36,
+          fontWeight: FontWeight.bold,
+          color: Color(AppConfig.primaryColor),
+        ),
+      ),
+    ),
+  );
+
+  Widget _buildAttemptRow(String word, int score, String feedback) => Padding(
+    padding: const EdgeInsets.symmetric(vertical: 8.0),
+    child: Row(
+      children: [
+        Expanded(
+          flex: 3,
+          child: Text(
+            word,
+            style:
+            const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+          ),
+        ),
+        Expanded(
+          flex: 2,
+          child: Text(
+            '$score',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 18,
+              color: Color(AppConfig.primaryColor),
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+        Expanded(
+          flex: 5,
+          child: Text(
+            feedback,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(color: Colors.grey.shade600),
+          ),
+        ),
+      ],
+    ),
+  );
+
+  Widget _buildStatRow(String label, String value) => Padding(
+    padding: const EdgeInsets.symmetric(vertical: 6.0),
+    child: Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(label,
+            style: TextStyle(color: Colors.grey.shade700, fontSize: 16)),
+        Text(
+          value,
+          style: TextStyle(
+            color: Color(AppConfig.primaryColor),
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ],
+    ),
+  );
 }

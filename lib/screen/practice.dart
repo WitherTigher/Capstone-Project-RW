@@ -1,14 +1,12 @@
 import 'dart:async';
-
-import 'package:readright/config/config.dart';
-import 'package:flutter/material.dart';
-import 'package:readright/widgets/base_scaffold.dart';
-import 'package:readright/services/databaseHelper.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter/material.dart';
 import 'package:stts/stts.dart';
-
-import 'package:flutter/foundation.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:readright/config/config.dart';
+import 'package:readright/widgets/student_base_scaffold.dart';
+// TODO: Hiding attempt because of the attempt class in word.dart, change when resolved
+import 'package:readright/models/word.dart' hide Attempt;
+import 'package:readright/models/attempt.dart';
 
 /// MOCK FUNCTION TO UPLOAD RECORDING TO SUPABASE STORAGE
 // Future<String?> uploadRecording(File file, String userId) async {
@@ -66,7 +64,7 @@ import 'package:flutter/foundation.dart';
 // }
 
 class PracticePage extends StatefulWidget {
-  const PracticePage({Key? key}) : super(key: key);
+  const PracticePage({super.key});
 
   @override
   State<PracticePage> createState() => _PracticePageState();
@@ -77,63 +75,135 @@ class _PracticePageState extends State<PracticePage> {
   late StreamSubscription<SttState> _stateSub;
   late StreamSubscription<SttRecognition> _resultSub;
 
-  String _recognizedText = '';
   bool _isListening = false;
   bool _hasPermission = false;
+  bool _loading = true;
+  String? _error;
+
+  String _recognizedText = '';
+  Word? _currentWord;
 
   @override
   void initState() {
     super.initState();
     _initSTT();
+    _loadNextUnmasteredWord();
   }
 
   Future<void> _initSTT() async {
-    // Request permission
     _hasPermission = await _stt.hasPermission();
 
-    // Listen for state changes (start/stop)
-    _stateSub = _stt.onStateChanged.listen(
-          (speechState) {
-        setState(() {
-          _isListening = (speechState == SttState.start);
-        });
-      },
-      onError: (err) {
-        debugPrint("STT State error: $err");
-      },
-    );
+    _stateSub = _stt.onStateChanged.listen((state) {
+      if (!mounted) return;
+      setState(() => _isListening = (state == SttState.start));
+    });
 
-    // Listen for results
-    _resultSub = _stt.onResultChanged.listen(
-          (SttRecognition result) {
+    _resultSub = _stt.onResultChanged.listen((result) {
+      if (!mounted) return;
+      setState(() => _recognizedText = result.text);
+    });
+  }
+
+  /// Fetch next unmastered word for the logged-in user using the RPC
+  Future<void> _loadNextUnmasteredWord() async {
+    final supabase = Supabase.instance.client;
+    final user = supabase.auth.currentUser;
+
+    if (user == null) {
+      setState(() {
+        _error = 'User not logged in.';
+        _loading = false;
+      });
+      return;
+    }
+
+    try {
+      final result =
+      await supabase.rpc('get_next_unmastered_word', params: {'user_id': user.id});
+
+      if (result == null || result.isEmpty) {
         setState(() {
-          _recognizedText = result.text;
+          _error = 'All words mastered 🎉';
+          _loading = false;
         });
-      },
-      onError: (err) {
-        debugPrint("STT Result error: $err");
-      },
-    );
+        return;
+      }
+
+      final w = result[0];
+      setState(() {
+        _currentWord = Word(
+          id: w['id'],
+          text: w['text'],
+          type: w['type'],
+          sentences: (w['sentences'] as List?)?.cast<String>() ?? [],
+        );
+        _loading = false;
+      });
+    } catch (e) {
+      debugPrint('Error loading next word: $e');
+      setState(() {
+        _error = 'Failed to load next word.';
+        _loading = false;
+      });
+    }
   }
 
   Future<void> _toggleRecording() async {
     if (!_hasPermission) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Microphone permission not granted.'),
-          duration: Duration(seconds: 2),
-        ),
+        const SnackBar(content: Text('Microphone permission not granted.')),
       );
       return;
     }
 
     if (_isListening) {
       await _stt.stop();
+      // After stopping, simulate or calculate a score.
+      final double analysisScore = _simulateScore(); // placeholder
+      await _storeAttempt(analysisScore);
     } else {
-      setState(() {
-        _recognizedText = '';
-      });
+      setState(() => _recognizedText = '');
       await _stt.start(SttRecognitionOptions(offline: false));
+    }
+  }
+
+  /// Example scoring placeholder
+  double _simulateScore() {
+    // Replace with actual speech comparison logic
+    if (_recognizedText.trim().toLowerCase() ==
+        _currentWord?.text.trim().toLowerCase()) {
+      return 100.0;
+    }
+    return 60.0;
+  }
+
+  /// Save attempt and reload next word if mastered
+  Future<void> _storeAttempt(double score) async {
+    final supabase = Supabase.instance.client;
+    final user = supabase.auth.currentUser;
+    if (user == null || _currentWord == null) return;
+
+    final attempt = Attempt(
+      wordId: _currentWord!.id,
+      score: score,
+      audioPath: null,
+      timestamp: DateTime.now(),
+    );
+
+    try {
+      await supabase.from('attempts').insert({
+        'user_id': user.id,
+        'word_id': attempt.wordId,
+        'score': attempt.score,
+        'timestamp': attempt.timestamp.toIso8601String(),
+      });
+
+      // Trigger will mark mastered automatically if score == 100
+      if (score == 100.0) {
+        await _loadNextUnmasteredWord();
+      }
+    } catch (e) {
+      debugPrint('Error saving attempt: $e');
     }
   }
 
@@ -147,98 +217,54 @@ class _PracticePageState extends State<PracticePage> {
 
   @override
   Widget build(BuildContext context) {
-    return BaseScaffold(
+    return StudentBaseScaffold(
       currentIndex: 1,
       pageTitle: 'Practice',
-      pageIcon: Icons.school,
-      body: SafeArea(
-        child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+      pageIcon: Icons.play_arrow,
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: _loading
+              ? const CircularProgressIndicator()
+              : _error != null
+              ? Text(_error!,
+              style: const TextStyle(color: Colors.red, fontSize: 16))
+              : Column(
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(24.0),
-                decoration: const BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.only(
-                    bottomLeft: Radius.circular(24),
-                    bottomRight: Radius.circular(24),
-                  ),
-                ),
-                child: Column(
-                  children: [
-                    Icon(
-                      _isListening ? Icons.mic : Icons.mic_none,
-                      size: 48,
-                      color: _isListening
-                          ? Color(AppConfig.primaryColor)
-                          : Colors.grey[700],
-                    ),
-                    const SizedBox(height: 16),
-                    const Text(
-                      'cat',
-                      style: TextStyle(
-                        fontSize: 42,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF2D3748),
-                        letterSpacing: 2,
-                      ),
-                    ),
-                  ],
+              Icon(
+                _isListening ? Icons.mic : Icons.mic_none,
+                size: 80,
+                color: _isListening
+                    ? Color(AppConfig.primaryColor)
+                    : Colors.grey.shade700,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                _currentWord?.text ?? '',
+                style: const TextStyle(
+                  fontSize: 42,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF2D3748),
                 ),
               ),
-
-              const SizedBox(height: 20),
-
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                child: Column(
-                  children: [
-                    SizedBox(
-                      width: double.infinity,
-                      height: 54,
-                      child: ElevatedButton.icon(
-                        onPressed: _toggleRecording,
-                        icon: Icon(
-                          _isListening ? Icons.stop_circle : Icons.mic_rounded,
-                          size: 22,
-                        ),
-                        label: Text(
-                          _isListening ? 'Stop Recording' : 'Record Word',
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Color(AppConfig.primaryColor),
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          elevation: 2,
-                        ),
-                      ),
-                    ),
-
-                    const SizedBox(height: 24),
-
-                    // Show recognized text
-                    if (_recognizedText.isNotEmpty)
-                      Text(
-                        'You said: $_recognizedText',
-                        style: const TextStyle(
-                          fontSize: 18,
-                          color: Colors.black87,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                  ],
+              const SizedBox(height: 30),
+              ElevatedButton.icon(
+                onPressed: _toggleRecording,
+                icon:
+                Icon(_isListening ? Icons.stop : Icons.mic_rounded),
+                label: Text(
+                    _isListening ? 'Stop Recording' : 'Start Recording'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Color(AppConfig.primaryColor),
+                  foregroundColor: Colors.white,
+                  minimumSize: const Size(200, 50),
                 ),
               ),
-
-              const SizedBox(height: 100),
+              const SizedBox(height: 30),
+              if (_recognizedText.isNotEmpty)
+                Text('You said: $_recognizedText',
+                    style: const TextStyle(fontSize: 18)),
             ],
           ),
         ),

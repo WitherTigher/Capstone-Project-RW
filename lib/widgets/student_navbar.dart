@@ -2,21 +2,21 @@ import 'package:flutter/material.dart';
 import 'package:readright/config/config.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-class NavBar extends StatefulWidget {
+class StudentNavBar extends StatefulWidget {
   final int currentIndex;
   final Function(int) onTap;
 
-  const NavBar({
+  const StudentNavBar({
     super.key,
     required this.currentIndex,
     required this.onTap,
   });
 
   @override
-  State<NavBar> createState() => _NavBarState();
+  State<StudentNavBar> createState() => _StudentNavBarState();
 }
 
-class _NavBarState extends State<NavBar> {
+class _StudentNavBarState extends State<StudentNavBar> {
   String? _role;
   bool _loading = true;
 
@@ -51,33 +51,33 @@ class _NavBarState extends State<NavBar> {
 
   @override
   Widget build(BuildContext context) {
-    // If still loading role, build an empty sized box to avoid assertion failure
     if (_loading) {
       return const SizedBox(height: 60);
     }
 
-    final isTeacher = _role == 'teacher';
-    final items = [
-      const BottomNavigationBarItem(
-        icon: Icon(Icons.insights),
-        label: 'Progress',
+    final items = const [
+      BottomNavigationBarItem(
+        icon: Icon(Icons.dashboard),
+        label: 'Dashboard',
       ),
-      const BottomNavigationBarItem(
+      BottomNavigationBarItem(
         icon: Icon(Icons.mic),
         label: 'Practice',
       ),
-      const BottomNavigationBarItem(
+      BottomNavigationBarItem(
+        icon: Icon(Icons.list),
+        label: 'Word List',
+      ),
+      BottomNavigationBarItem(
+        icon: Icon(Icons.insights),
+        label: 'Progress',
+      ),
+      BottomNavigationBarItem(
         icon: Icon(Icons.feedback),
         label: 'Feedback',
       ),
-      if (isTeacher)
-        const BottomNavigationBarItem(
-          icon: Icon(Icons.dashboard),
-          label: 'Teacher',
-        ),
     ];
 
-    // Adjust currentIndex safely — prevent it from exceeding item count
     final safeIndex = widget.currentIndex < items.length
         ? widget.currentIndex
         : items.length - 1;
@@ -85,10 +85,20 @@ class _NavBarState extends State<NavBar> {
     return BottomNavigationBar(
       currentIndex: safeIndex,
       onTap: widget.onTap,
+      type: BottomNavigationBarType.fixed,
+      showSelectedLabels: true,
+      showUnselectedLabels: true,
       selectedItemColor: Color(AppConfig.primaryColor),
       unselectedItemColor: Colors.grey,
-      type: BottomNavigationBarType.fixed,
-      items: items,
+      backgroundColor: Colors.white,
+      items: const [
+        BottomNavigationBarItem(icon: Icon(Icons.dashboard), label: 'Dashboard'),
+        BottomNavigationBarItem(icon: Icon(Icons.mic), label: 'Practice'),
+        BottomNavigationBarItem(icon: Icon(Icons.list), label: 'Words'),
+        BottomNavigationBarItem(icon: Icon(Icons.insights), label: 'Progress'),
+        BottomNavigationBarItem(icon: Icon(Icons.feedback), label: 'Feedback'),
+      ],
     );
+
   }
 }

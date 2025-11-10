@@ -15,6 +15,7 @@ class _LoginPageState extends State<LoginPage> {
 
   bool _isLoading = false;
   String? _errorText;
+  bool _obscurePassword = true; // 👁️ Controls visibility of password
 
   Future<void> _login() async {
     final email = _emailController.text.trim();
@@ -32,26 +33,42 @@ class _LoginPageState extends State<LoginPage> {
 
     try {
       final supabase = Supabase.instance.client;
+
       final res = await supabase.auth.signInWithPassword(
         email: email,
         password: password,
       );
 
-      if (res.user != null) {
-        debugPrint('Logged in as ${res.user!.email}');
-        debugPrint('User UUID: ${res.user!.id}');
-        if (mounted) {
+      final user = res.user;
+      if (user == null) {
+        setState(() {
+          _errorText = 'Invalid email or password.';
+          _isLoading = false;
+        });
+        return;
+      }
+
+      final roleData = await supabase
+          .from('users')
+          .select('role')
+          .eq('id', user.id)
+          .maybeSingle();
+
+      final role = roleData?['role'] ?? 'student';
+
+      if (mounted) {
+        if (role == 'teacher') {
+          Navigator.pushReplacementNamed(context, '/teacherDashboard');
+        } else {
           Navigator.pushReplacementNamed(context, '/progress');
         }
-      } else {
-        setState(() => _errorText = 'Invalid email or password.');
       }
     } catch (e) {
       setState(() => _errorText = 'Login failed: $e');
       debugPrint('Login error: $e');
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
-
-    setState(() => _isLoading = false);
   }
 
   @override
@@ -63,8 +80,11 @@ class _LoginPageState extends State<LoginPage> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.lock_open,
-                  size: 80, color: Color(AppConfig.primaryColor)),
+              Icon(
+                Icons.lock_open,
+                size: 80,
+                color: Color(AppConfig.primaryColor),
+              ),
               const SizedBox(height: 20),
               Text(
                 'Sign In',
@@ -85,16 +105,26 @@ class _LoginPageState extends State<LoginPage> {
               const SizedBox(height: 20),
               TextField(
                 controller: _passwordController,
-                obscureText: true,
-                decoration: const InputDecoration(
+                obscureText: _obscurePassword,
+                decoration: InputDecoration(
                   labelText: 'Password',
-                  border: OutlineInputBorder(),
+                  border: const OutlineInputBorder(),
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        _obscurePassword = !_obscurePassword;
+                      });
+                    },
+                  ),
                 ),
               ),
               const SizedBox(height: 30),
               if (_errorText != null)
                 Text(
-                  _errorText!,
+                  "Incorrect login information.",
                   style: const TextStyle(color: Colors.red),
                 ),
               const SizedBox(height: 10),
@@ -126,6 +156,12 @@ class _LoginPageState extends State<LoginPage> {
                 onPressed: () =>
                     Navigator.pushReplacementNamed(context, '/signup'),
                 child: const Text("Don't have an account? Sign up"),
+              ),
+              const SizedBox(height: 16),
+              TextButton(
+                onPressed: () =>
+                    Navigator.pushReplacementNamed(context, '/resetPassword'),
+                child: const Text('Forgot your password? Reset here'),
               ),
             ],
           ),

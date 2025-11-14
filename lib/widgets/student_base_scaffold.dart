@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:readright/config/config.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class StudentBaseScaffold extends StatelessWidget {
   final Widget body;
@@ -34,6 +35,31 @@ class StudentBaseScaffold extends StatelessWidget {
             ),
           ],
         ),
+
+        // ------------------------------
+        // Logout button
+        // ------------------------------
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout, color: Colors.white),
+            tooltip: 'Logout',
+            onPressed: () async {
+              final supabase = Supabase.instance.client;
+
+              // Sign out the user
+              await supabase.auth.signOut();
+
+              // Navigate to login page & clear stack
+              if (context.mounted) {
+                Navigator.pushNamedAndRemoveUntil(
+                  context,
+                  '/login',
+                      (route) => false,
+                );
+              }
+            },
+          ),
+        ],
       ),
       body: body,
       bottomNavigationBar: BottomNavigationBar(

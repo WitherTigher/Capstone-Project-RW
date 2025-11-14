@@ -1,8 +1,14 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+
 import 'package:readright/config/config.dart';
 import 'package:readright/services/databaseHelper.dart';
+
+// Providers
+import 'package:readright/providers/studentDashboardProvider.dart';
+import 'package:readright/providers/teacherDashboardProvider.dart';
 
 // Screens
 import 'package:readright/screen/login.dart';
@@ -25,17 +31,25 @@ Future<void> main() async {
   const supabaseAnonKey =
       'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ5aG1nZGdqbHlwaHd5aWxyZmptIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE4NDU1NDksImV4cCI6MjA3NzQyMTU0OX0.rkxUJIWYpoPpCV3azuK7vwenPATJeLjzTdTn13savZM';
 
+
   await Supabase.initialize(
     url: supabaseUrl,
     anonKey: supabaseAnonKey,
   );
 
-  // Optional: avoid signing out automatically on web builds
   if (!kIsWeb) {
     await Supabase.instance.client.auth.signOut();
   }
 
-  runApp(const MyApp());
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => StudentDashboardProvider()),
+        ChangeNotifierProvider(create: (_) => TeacherDashboardProvider()),
+      ],
+      child: const MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatefulWidget {
@@ -58,12 +72,13 @@ class _MyAppState extends State<MyApp> {
 
   Future<void> _initApp() async {
     try {
-      // Skip local DB seed import on web (not supported)
       if (!kIsWeb) {
-        await DatabaseHelper.instance.importSeedWords();
+        await DatabaseHelper.instance.importDolchCSV('lib/assets/dolch_pre_primer.csv');
+        await DatabaseHelper.instance.importDolchCSV('lib/assets/dolch_primer.csv');
+        await DatabaseHelper.instance.importDolchCSV('lib/assets/dolch_first_grade.csv');
+        await DatabaseHelper.instance.importDolchCSV('lib/assets/dolch_second_grade.csv');
+        await DatabaseHelper.instance.importDolchCSV('lib/assets/dolch_third_grade.csv');
         debugPrint('Seed words imported');
-      } else {
-        debugPrint('Seed import skipped on web');
       }
     } catch (e) {
       debugPrint('Seed import skipped: $e');

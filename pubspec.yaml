@@ -35,6 +35,8 @@ dependencies:
   stts:
 
   intl:
+  supabase:
+  provider:
 # ---------------------------------------------------------------------------
 # Dev dependencies
 # ---------------------------------------------------------------------------
@@ -48,6 +50,11 @@ dev_dependencies:
   flutter_launcher_icons: ^0.13.1
   flutter_native_splash: ^2.4.0
 
+  # Provider
+  provider:
+  # Supabase
+  supabase:
+
 # ---------------------------------------------------------------------------
 # Flutter assets
 # ---------------------------------------------------------------------------
@@ -55,7 +62,11 @@ flutter:
   uses-material-design: true
   assets:
     - lib/assets/logo.png
-    - lib/assets/seed_words.csv
+    - lib/assets/dolch_pre_primer.csv
+    - lib/assets/dolch_primer.csv
+    - lib/assets/dolch_first_grade.csv
+    - lib/assets/dolch_second_grade.csv
+    - lib/assets/dolch_third_grade.csv
 
 # ---------------------------------------------------------------------------
 # App icon configuration

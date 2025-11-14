@@ -1,10 +1,11 @@
+// CLEANED VERSION WITH ONLY ESSENTIAL DEBUG OUTPUT
+
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:stts/stts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:readright/config/config.dart';
 import 'package:readright/widgets/student_base_scaffold.dart';
-// TODO: Hiding attempt because of the attempt class in word.dart, change when resolved
 import 'package:readright/models/word.dart' hide Attempt;
 import 'package:readright/models/attempt.dart';
 
@@ -87,7 +88,7 @@ class _PracticePageState extends State<PracticePage> {
   void initState() {
     super.initState();
     _initSTT();
-    _loadNextUnmasteredWord();
+    _loadNextWord();
   }
 
   Future<void> _initSTT() async {
@@ -95,59 +96,158 @@ class _PracticePageState extends State<PracticePage> {
 
     _stateSub = _stt.onStateChanged.listen((state) {
       if (!mounted) return;
-      setState(() => _isListening = (state == SttState.start));
+      // keep only listening-state toggle
+      _isListening = (state == SttState.start);
+      setState(() {});
     });
 
     _resultSub = _stt.onResultChanged.listen((result) {
       if (!mounted) return;
-      setState(() => _recognizedText = result.text);
+      _recognizedText = result.text;
+      setState(() {});
     });
   }
 
-  /// Fetch next unmastered word for the logged-in user using the RPC
-  Future<void> _loadNextUnmasteredWord() async {
-    final supabase = Supabase.instance.client;
-    final user = supabase.auth.currentUser;
+  // ---------------------------------------------------------
+  // CURRENT LIST
+  // ---------------------------------------------------------
+  Future<Map<String, dynamic>?> _fetchCurrentListRecord(String userId) async {
+    debugPrint('[Practice] Checking current list for $userId');
+
+    final result = await Supabase.instance.client.rpc(
+      'get_current_list_for_student',
+      params: {'user_id_input': userId},
+    );
+
+    if (result == null) {
+      debugPrint('[Practice] No active list returned');
+      return null;
+    }
+
+    if (result is List && result.isNotEmpty) {
+      return Map<String, dynamic>.from(result.first);
+    }
+
+    if (result is Map<String, dynamic>) {
+      if (result['list_id'] == null) {
+        debugPrint('[Practice] current_list list_id=null → all lists complete');
+        return null;
+      }
+      return result;
+    }
+
+    debugPrint('[Practice] Unexpected RPC return type');
+    return null;
+  }
+
+  // ---------------------------------------------------------
+  // MASTERED WORDS
+  // ---------------------------------------------------------
+  Future<List<String>> _masteredWordIdList(String userId) async {
+    final rows = await Supabase.instance.client
+        .from('mastered_words')
+        .select('word_id')
+        .eq('user_id', userId);
+
+    return rows
+        .where((r) => r['word_id'] != null)
+        .map<String>((r) => r['word_id'] as String)
+        .toList();
+  }
+
+  // ---------------------------------------------------------
+  // NEXT UNMASTERED WORD
+  // ---------------------------------------------------------
+  Future<Map<String, dynamic>?> _fetchUnmasteredWord(
+      String userId, String listId) async {
+    final mastered = await _masteredWordIdList(userId);
+
+    List<dynamic> rows;
+
+    if (mastered.isEmpty) {
+      // first word in list
+      rows = await Supabase.instance.client
+          .from('words')
+          .select('id,text,type,sentences')
+          .eq('list_id', listId)
+          .limit(1);
+    } else {
+      final inList = mastered.map((id) => '"$id"').join(',');
+      final filterValue = '($inList)';
+
+      rows = await Supabase.instance.client
+          .from('words')
+          .select('id,text,type,sentences')
+          .eq('list_id', listId)
+          .not('id', 'in', filterValue)
+          .limit(1);
+    }
+
+    if (rows.isEmpty) return null;
+    final w = rows[0];
+
+    return {
+      'id': w['id'],
+      'text': w['text'],
+      'type': w['type'],
+      'sentences': w['sentences'] ?? [],
+    };
+  }
+
+  // ---------------------------------------------------------
+  // LOAD NEXT WORD
+  // ---------------------------------------------------------
+  Future<void> _loadNextWord() async {
+    final user = Supabase.instance.client.auth.currentUser;
 
     if (user == null) {
-      setState(() {
-        _error = 'User not logged in.';
-        _loading = false;
-      });
+      _error = 'User not logged in.';
+      _loading = false;
+      setState(() {});
       return;
     }
 
-    try {
-      final result =
-      await supabase.rpc('get_next_unmastered_word', params: {'user_id': user.id});
+    final listRecord = await _fetchCurrentListRecord(user.id);
 
-      if (result == null || result.isEmpty) {
-        setState(() {
-          _error = 'All words mastered 🎉';
-          _loading = false;
-        });
-        return;
-      }
-
-      final w = result[0];
-      setState(() {
-        _currentWord = Word(
-          id: w['id'],
-          text: w['text'],
-          type: w['type'],
-          sentences: (w['sentences'] as List?)?.cast<String>() ?? [],
-        );
-        _loading = false;
-      });
-    } catch (e) {
-      debugPrint('Error loading next word: $e');
-      setState(() {
-        _error = 'Failed to load next word.';
-        _loading = false;
-      });
+    if (listRecord == null) {
+      _error = 'All Dolch Lists Complete';
+      _loading = false;
+      setState(() {});
+      return;
     }
+
+    final listId = listRecord['list_id'] as String?;
+
+    if (listId == null) {
+      _error = 'All Dolch Lists Complete';
+      _loading = false;
+      setState(() {});
+      return;
+    }
+
+    final nextWord = await _fetchUnmasteredWord(user.id, listId);
+
+    if (nextWord == null) {
+      // retry after SQL promotion
+      await Future.delayed(const Duration(milliseconds: 100));
+      return _loadNextWord();
+    }
+
+    _currentWord = Word(
+      id: nextWord['id'],
+      text: nextWord['text'],
+      type: nextWord['type'],
+      sentences: (nextWord['sentences'] as List?)?.cast<String>() ?? [],
+    );
+
+    _loading = false;
+    _error = null;
+    setState(() {});
   }
 
+  // ---------------------------------------------------------
+  // RECORDING
+  // ---------------------------------------------------------
   Future<void> _toggleRecording() async {
     if (!_hasPermission) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -158,52 +258,35 @@ class _PracticePageState extends State<PracticePage> {
 
     if (_isListening) {
       await _stt.stop();
-      // After stopping, simulate or calculate a score.
-      final double analysisScore = _simulateScore(); // placeholder
-      await _storeAttempt(analysisScore);
+      final score = _simulateScore();
+      await _storeAttempt(score);
     } else {
-      setState(() => _recognizedText = '');
+      _recognizedText = '';
       await _stt.start(SttRecognitionOptions(offline: false));
     }
   }
 
-  /// Example scoring placeholder
   double _simulateScore() {
-    // Replace with actual speech comparison logic
-    if (_recognizedText.trim().toLowerCase() ==
-        _currentWord?.text.trim().toLowerCase()) {
-      return 100.0;
-    }
-    return 60.0;
+    final spoken = _recognizedText.trim().toLowerCase();
+    final target = _currentWord?.text.trim().toLowerCase();
+    return (spoken == target) ? 100.0 : 60.0;
   }
 
-  /// Save attempt and reload next word if mastered
   Future<void> _storeAttempt(double score) async {
-    final supabase = Supabase.instance.client;
-    final user = supabase.auth.currentUser;
+    final user = Supabase.instance.client.auth.currentUser;
     if (user == null || _currentWord == null) return;
 
-    final attempt = Attempt(
-      wordId: _currentWord!.id,
-      score: score,
-      audioPath: null,
-      timestamp: DateTime.now(),
-    );
+    await Supabase.instance.client.from('attempts').insert({
+      'user_id': user.id,
+      'word_id': _currentWord!.id,
+      'score': score,
+      'timestamp': DateTime.now().toIso8601String(),
+    });
 
-    try {
-      await supabase.from('attempts').insert({
-        'user_id': user.id,
-        'word_id': attempt.wordId,
-        'score': attempt.score,
-        'timestamp': attempt.timestamp.toIso8601String(),
-      });
-
-      // Trigger will mark mastered automatically if score == 100
-      if (score == 100.0) {
-        await _loadNextUnmasteredWord();
-      }
-    } catch (e) {
-      debugPrint('Error saving attempt: $e');
+    if (score == 100.0) {
+      _loading = true;
+      setState(() {});
+      await _loadNextWord();
     }
   }
 
@@ -254,7 +337,8 @@ class _PracticePageState extends State<PracticePage> {
                 icon:
                 Icon(_isListening ? Icons.stop : Icons.mic_rounded),
                 label: Text(
-                    _isListening ? 'Stop Recording' : 'Start Recording'),
+                  _isListening ? 'Stop Recording' : 'Start Recording',
+                ),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Color(AppConfig.primaryColor),
                   foregroundColor: Colors.white,
@@ -263,8 +347,10 @@ class _PracticePageState extends State<PracticePage> {
               ),
               const SizedBox(height: 30),
               if (_recognizedText.isNotEmpty)
-                Text('You said: $_recognizedText',
-                    style: const TextStyle(fontSize: 18)),
+                Text(
+                  'You said: $_recognizedText',
+                  style: const TextStyle(fontSize: 18),
+                ),
             ],
           ),
         ),

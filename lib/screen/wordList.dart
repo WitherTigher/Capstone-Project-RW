@@ -23,19 +23,49 @@ class _WordListPageState extends State<WordListPage> {
     _loadCurrentWordList();
   }
 
+  // ------------------------------------------------------------
+  // LOAD CURRENT LIST + WORDS
+  // ------------------------------------------------------------
   Future<void> _loadCurrentWordList() async {
     final supabase = Supabase.instance.client;
 
     try {
+      final user = supabase.auth.currentUser;
+      if (user == null) {
+        setState(() {
+          _error = 'User not logged in.';
+          _loading = false;
+        });
+        return;
+      }
+
+      // 1. Fetch student’s current list index
+      final userData = await supabase
+          .from('users')
+          .select('current_list_int')
+          .eq('id', user.id)
+          .maybeSingle();
+
+      if (userData == null || userData['current_list_int'] == null) {
+        setState(() {
+          _error = 'No Dolch list assigned.';
+          _loading = false;
+        });
+        return;
+      }
+
+      final currentOrder = userData['current_list_int'] as int;
+
+      // 2. Find the matching word list
       final listData = await supabase
           .from('word_lists')
-          .select('id, title')
-          .eq('is_current', true)
+          .select('id, title, list_order')
+          .eq('list_order', currentOrder)
           .maybeSingle();
 
       if (listData == null) {
         setState(() {
-          _error = 'No current word list found.';
+          _error = 'Word list not found for order $currentOrder.';
           _loading = false;
         });
         return;
@@ -44,6 +74,7 @@ class _WordListPageState extends State<WordListPage> {
       final listId = listData['id'] as String;
       _listTitle = listData['title'] ?? 'Current List';
 
+      // 3. Fetch words from this list
       final wordData = await supabase
           .from('words')
           .select('id, text, type, sentences')
@@ -64,12 +95,15 @@ class _WordListPageState extends State<WordListPage> {
     } catch (e) {
       debugPrint('Error loading current list: $e');
       setState(() {
-        _error = 'Failed to load current list.';
+        _error = 'Failed to load current word list.';
         _loading = false;
       });
     }
   }
 
+  // ------------------------------------------------------------
+  //  UI
+  // ------------------------------------------------------------
   @override
   Widget build(BuildContext context) {
     return StudentBaseScaffold(
@@ -86,8 +120,10 @@ class _WordListPageState extends State<WordListPage> {
               if (_error != null)
                 Padding(
                   padding: const EdgeInsets.all(16.0),
-                  child: Text(_error!,
-                      style: const TextStyle(color: Colors.red)),
+                  child: Text(
+                    _error!,
+                    style: const TextStyle(color: Colors.red),
+                  ),
                 )
               else
                 _buildWordList(),
@@ -117,12 +153,30 @@ class _WordListPageState extends State<WordListPage> {
         child: Padding(
           padding: const EdgeInsets.all(20.0),
           child: Column(
-            children: _words.map((w) => _buildWordItem(w)).toList(),
+            children: [
+              Text(
+                _listTitle,
+                style: const TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 20),
+
+              /// <<< NEW: horizontal flow layout >>>
+              Wrap(
+                spacing: 16,       // horizontal spacing
+                runSpacing: 16,    // vertical spacing
+                alignment: WrapAlignment.center,
+                children: _words.map((w) => _buildWordChip(w)).toList(),
+              ),
+            ],
           ),
         ),
       ),
     );
   }
+
 
   Widget _buildWordItem(Word word) {
     return Padding(
@@ -135,7 +189,7 @@ class _WordListPageState extends State<WordListPage> {
           border: Border.all(color: Color(AppConfig.primaryColor), width: 2),
         ),
         child: Text(
-          '${word.text} (${word.type})',
+          word.text,
           style: const TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w600,
@@ -153,8 +207,9 @@ class _WordListPageState extends State<WordListPage> {
         width: double.infinity,
         height: 54,
         child: ElevatedButton.icon(
-          onPressed: () =>
-              Navigator.pushReplacementNamed(context, '/practice'),
+          onPressed: () {
+            Navigator.pushReplacementNamed(context, '/practice');
+          },
           icon: const Icon(Icons.mic, size: 22),
           label: const Text(
             'Go To Practice',
@@ -168,6 +223,25 @@ class _WordListPageState extends State<WordListPage> {
             ),
             elevation: 2,
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildWordChip(Word word) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+      decoration: BoxDecoration(
+        color: Color(AppConfig.primaryColor).withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Color(AppConfig.primaryColor), width: 2),
+      ),
+      child: Text(
+        word.text,
+        style: const TextStyle(
+          fontSize: 18,
+          fontWeight: FontWeight.w600,
+          color: Color(0xFF2D3748),
         ),
       ),
     );

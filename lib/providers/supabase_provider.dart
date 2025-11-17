@@ -10,7 +10,7 @@ class SupabaseProvider implements ProviderInterface {
   final SupabaseClient _client;
 
   SupabaseProvider({SupabaseClient? client})
-      : _client = client ?? Supabase.instance.client;
+    : _client = client ?? Supabase.instance.client;
 
   /// Helper to coerce various Supabase responses into a List<dynamic>
   List<dynamic> _toList(dynamic response) {
@@ -99,7 +99,7 @@ class SupabaseProvider implements ProviderInterface {
           .eq('list_order', currentListInt)
           .maybeSingle();
 
-      return (listData as Map<String, dynamic>?);
+      return listData;
     } catch (e, st) {
       debugPrint('Error fetching current word list: $e\n$st');
       return null;
@@ -118,8 +118,8 @@ class SupabaseProvider implements ProviderInterface {
       final data = _toList(response);
 
       return data.map<Word>((wordDataRaw) {
-        final Map<String, dynamic> wordData =
-            (wordDataRaw as Map).cast<String, dynamic>();
+        final Map<String, dynamic> wordData = (wordDataRaw as Map)
+            .cast<String, dynamic>();
         final sentenceList =
             (wordData['sentences'] as List?)?.cast<String>() ?? <String>[];
 
@@ -168,7 +168,9 @@ class SupabaseProvider implements ProviderInterface {
           .eq('id', wordId)
           .maybeSingle();
 
-      final wordText = (wordData == null) ? '' : (wordData['text'] as String? ?? '');
+      final wordText = (wordData == null)
+          ? ''
+          : (wordData['text'] as String? ?? '');
 
       final attemptData = {
         'user_id': userId,
@@ -195,7 +197,7 @@ class SupabaseProvider implements ProviderInterface {
       // response could be Map or List (if .select() returns list) - handle both
       Map<String, dynamic> resultMap;
       if (response is List && response!.isNotEmpty) {
-        resultMap = (response?.first as Map).cast<String, dynamic>();
+        resultMap = (response.first as Map).cast<String, dynamic>();
       } else if (response is Map) {
         resultMap = (response as Map).cast<String, dynamic>();
       } else {
@@ -229,7 +231,9 @@ class SupabaseProvider implements ProviderInterface {
       final data = _toList(response);
 
       return data.map<Attempt>((attemptDataRaw) {
-        return Attempt.fromJson((attemptDataRaw as Map).cast<String, dynamic>());
+        return Attempt.fromJson(
+          (attemptDataRaw as Map).cast<String, dynamic>(),
+        );
       }).toList();
     } catch (e, st) {
       debugPrint('Error fetching attempt history: $e\n$st');
@@ -249,7 +253,9 @@ class SupabaseProvider implements ProviderInterface {
           .order('mastered_at', ascending: false);
 
       final data = _toList(response);
-      return data.map<Map<String, dynamic>>((e) => (e as Map).cast<String, dynamic>()).toList();
+      return data
+          .map<Map<String, dynamic>>((e) => (e as Map).cast<String, dynamic>())
+          .toList();
     } catch (e, st) {
       debugPrint('Error fetching mastered words: $e\n$st');
       throw Exception('Failed to fetch mastered words: $e');
@@ -287,7 +293,8 @@ class SupabaseProvider implements ProviderInterface {
           .eq('word_id', wordId)
           .maybeSingle();
 
-      final roundedScore = score.round(); // store integer score in DB if column is int
+      final roundedScore = score
+          .round(); // store integer score in DB if column is int
 
       if (existing == null) {
         // Create new mastered word entry if score is high
@@ -308,11 +315,16 @@ class SupabaseProvider implements ProviderInterface {
         final currentHighest = _toInt(existing['highest_score'], fallback: 0);
         final currentCount = _toInt(existing['attempt_count'], fallback: 0);
 
-        await _client.from('mastered_words').update({
-          'highest_score': (roundedScore > currentHighest) ? roundedScore : currentHighest,
-          'attempt_count': currentCount + 1,
-          'last_attempt': DateTime.now().toUtc().toIso8601String(),
-        }).eq('id', existing['id']);
+        await _client
+            .from('mastered_words')
+            .update({
+              'highest_score': (roundedScore > currentHighest)
+                  ? roundedScore
+                  : currentHighest,
+              'attempt_count': currentCount + 1,
+              'last_attempt': DateTime.now().toUtc().toIso8601String(),
+            })
+            .eq('id', existing['id']);
       }
     } catch (e, st) {
       debugPrint('Error updating mastered word: $e\n$st');

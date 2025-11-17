@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:readright/config/config.dart';
 import 'package:readright/widgets/student_base_scaffold.dart';
-import 'package:flutter/material.dart';
-
 
 class FeedbackPage extends StatelessWidget {
   const FeedbackPage({super.key});
@@ -104,7 +102,11 @@ class FeedbackPage extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  Icon(Icons.star, color: Color(AppConfig.primaryColor), size: 24),
+                  Icon(
+                    Icons.star,
+                    color: Color(AppConfig.primaryColor),
+                    size: 24,
+                  ),
                   const SizedBox(width: 8),
                   const Text(
                     'Pronunciation Score',
@@ -148,7 +150,10 @@ class FeedbackPage extends StatelessWidget {
                   ),
                   const SizedBox(width: 16),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 10,
+                    ),
                     decoration: BoxDecoration(
                       color: Color(AppConfig.primaryColor).withOpacity(0.15),
                       borderRadius: BorderRadius.circular(20),
@@ -189,7 +194,11 @@ class FeedbackPage extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  Icon(Icons.hearing, color: Color(AppConfig.secondaryColor), size: 24),
+                  Icon(
+                    Icons.hearing,
+                    color: Color(AppConfig.secondaryColor),
+                    size: 24,
+                  ),
                   const SizedBox(width: 8),
                   const Text(
                     'Sound Analysis',
@@ -261,7 +270,8 @@ class FeedbackPage extends StatelessWidget {
             width: double.infinity,
             height: 54,
             child: ElevatedButton.icon(
-              onPressed: () => Navigator.pushReplacementNamed(context, '/practice'),
+              onPressed: () =>
+                  Navigator.pushReplacementNamed(context, '/practice'),
               icon: const Icon(Icons.replay, size: 22),
               label: const Text(
                 'Try Again',
@@ -316,7 +326,10 @@ class FeedbackPage extends StatelessWidget {
               ),
               style: OutlinedButton.styleFrom(
                 foregroundColor: Color(AppConfig.secondaryColor),
-                side: BorderSide(color: Color(AppConfig.secondaryColor), width: 2),
+                side: BorderSide(
+                  color: Color(AppConfig.secondaryColor),
+                  width: 2,
+                ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
@@ -384,8 +397,11 @@ class FeedbackPage extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(Icons.check_circle_outline,
-              size: 18, color: Color(AppConfig.primaryColor)),
+          Icon(
+            Icons.check_circle_outline,
+            size: 18,
+            color: Color(AppConfig.primaryColor),
+          ),
           const SizedBox(width: 8),
           Expanded(
             child: Text(

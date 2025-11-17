@@ -126,6 +126,7 @@ class WordProvider with ChangeNotifier {
           recordingUrl: attempt.recordingUrl,
           feedback: attempt.feedback,
           duration: attempt.duration,
+          audioPath: '',
         );
         debugPrint('Attempt saved online');
         return savedAttempt;

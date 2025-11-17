@@ -24,18 +24,20 @@ class TeacherBaseScaffold extends StatefulWidget {
 class _TeacherBaseScaffoldState extends State<TeacherBaseScaffold> {
   void _onItemTapped(int index) {
     if (!mounted) return;
+    // Prevents double rebuilds
+    if (index == widget.currentIndex) return;
     switch (index) {
       case 0:
-        Navigator.pushReplacementNamed(context, '/teacherDashboard');
+        Navigator.pushNamed(context, '/teacherDashboard');
         break;
       case 1:
-        Navigator.pushReplacementNamed(context, '/teacherWordLists');
+        Navigator.pushNamed(context, '/teacherWordLists');
         break;
       case 2:
-        Navigator.pushReplacementNamed(context, '/teacherStudents');
+        Navigator.pushNamed(context, '/teacherStudents');
         break;
       case 3:
-        Navigator.pushReplacementNamed(context, '/teacherSettings');
+        Navigator.pushNamed(context, '/teacherSettings');
         break;
     }
   }

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:readright/config/config.dart';
 import 'package:readright/widgets/teacher_base_scaffold.dart';
-import 'package:readright/providers/teacherDashboardProvider.dart';
+import 'package:readright/providers/teacherProvider.dart';
 
 class TeacherDashboard extends StatelessWidget {
   const TeacherDashboard({super.key});
@@ -10,7 +10,7 @@ class TeacherDashboard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
-      create: (_) => TeacherDashboardProvider(),
+      create: (_) => TeacherProvider(),
       child: const _TeacherDashboardView(),
     );
   }
@@ -21,7 +21,7 @@ class _TeacherDashboardView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<TeacherDashboardProvider>(
+    return Consumer<TeacherProvider>(
       builder: (context, provider, _) {
         return TeacherBaseScaffold(
           currentIndex: 0,
@@ -29,12 +29,12 @@ class _TeacherDashboardView extends StatelessWidget {
           pageIcon: Icons.dashboard,
           body: SafeArea(
             child: RefreshIndicator(
-              onRefresh: provider.refresh,
+              onRefresh: provider.refreshDashboard,
               child: SingleChildScrollView(
                 physics: const AlwaysScrollableScrollPhysics(),
                 child: Column(
                   children: [
-                    // ------------------ HEADER ------------------
+                    // HEADER
                     Container(
                       width: double.infinity,
                       padding: const EdgeInsets.all(24.0),
@@ -75,19 +75,19 @@ class _TeacherDashboardView extends StatelessWidget {
 
                     const SizedBox(height: 20),
 
-                    // ------------------ LOADING STATE ------------------
-                    if (provider.isLoading)
+                    // LOADING STATE
+                    if (provider.dashboardLoading)
                       const Padding(
                         padding: EdgeInsets.only(top: 40.0),
                         child: Center(child: CircularProgressIndicator()),
                       )
 
-                    // ------------------ ERROR STATE ------------------
-                    else if (provider.errorMessage != null)
+                    // ERROR STATE
+                    else if (provider.dashboardError != null)
                       Padding(
                         padding: const EdgeInsets.all(16.0),
                         child: Text(
-                          provider.errorMessage!,
+                          provider.dashboardError!,
                           style: const TextStyle(
                             color: Colors.redAccent,
                             fontWeight: FontWeight.w600,
@@ -96,9 +96,9 @@ class _TeacherDashboardView extends StatelessWidget {
                         ),
                       )
 
-                    // ------------------ MAIN CONTENT ------------------
+                    // MAIN CONTENT
                     else ...[
-                        // ------------------ CLASS SUMMARY CARD ------------------
+                        // CLASS SUMMARY CARD
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 16.0),
                           child: Card(
@@ -140,8 +140,7 @@ class _TeacherDashboardView extends StatelessWidget {
                                       ),
                                       _buildStatTile(
                                         'Top Performer',
-                                        provider.topPerformerName ??
-                                            'No data',
+                                        provider.topPerformerName ?? 'No data',
                                         Color(AppConfig.secondaryColor),
                                       ),
                                       _buildStatTile(
@@ -159,16 +158,14 @@ class _TeacherDashboardView extends StatelessWidget {
 
                         const SizedBox(height: 20),
 
-                        // ------------------ STUDENT LIST ------------------
+                        // STUDENT LIST
                         Padding(
-                          padding:
-                          const EdgeInsets.symmetric(horizontal: 16.0),
+                          padding: const EdgeInsets.symmetric(horizontal: 16.0),
                           child: Column(
                             children: provider.students.isEmpty
                                 ? [
                               const Padding(
-                                padding:
-                                EdgeInsets.symmetric(vertical: 24.0),
+                                padding: EdgeInsets.symmetric(vertical: 24.0),
                                 child: Text(
                                   'No student data yet.\nStudents will appear once they begin practicing.',
                                   textAlign: TextAlign.center,
@@ -178,8 +175,7 @@ class _TeacherDashboardView extends StatelessWidget {
                                 : provider.students
                                 .map(
                                   (s) => Padding(
-                                padding:
-                                const EdgeInsets.only(bottom: 12.0),
+                                padding: const EdgeInsets.only(bottom: 12.0),
                                 child: _buildStudentCard(
                                   name: s.name,
                                   progress: s.progress,
@@ -199,10 +195,9 @@ class _TeacherDashboardView extends StatelessWidget {
 
                         const SizedBox(height: 24),
 
-                        // ------------------ ACTION BUTTONS ------------------
+                        // ACTION BUTTONS
                         Padding(
-                          padding:
-                          const EdgeInsets.symmetric(horizontal: 16.0),
+                          padding: const EdgeInsets.symmetric(horizontal: 16.0),
                           child: Column(
                             children: [
                               SizedBox(
@@ -250,8 +245,7 @@ class _TeacherDashboardView extends StatelessWidget {
                                     foregroundColor:
                                     Color(AppConfig.secondaryColor),
                                     side: BorderSide(
-                                      color:
-                                      Color(AppConfig.secondaryColor),
+                                      color: Color(AppConfig.secondaryColor),
                                     ),
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(12),
@@ -275,7 +269,7 @@ class _TeacherDashboardView extends StatelessWidget {
     );
   }
 
-  // ------------------ SMALL WIDGETS ------------------
+  // _build SMALL WIDGETS
 
   Widget _buildStatTile(String label, String value, Color color) {
     return Column(
@@ -332,10 +326,7 @@ class _TeacherDashboardView extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                Icon(
-                  trend,
-                  color: color,
-                ),
+                Icon(trend, color: color),
               ],
             ),
 

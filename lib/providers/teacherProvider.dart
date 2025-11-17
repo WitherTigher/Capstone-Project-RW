@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:readright/services/databaseHelper.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class StudentDashboardItem {
   final String id;
   final String name;
-  final double progress; // 0.0–1.0 mastery proxy via avg accuracy
-  final double accuracy; // 0–100
+  // 0.0–1.0
+  final double progress;
+  // 0–100
+  final double accuracy;
   final bool trendingUp;
 
   StudentDashboardItem({
@@ -17,26 +20,61 @@ class StudentDashboardItem {
   });
 }
 
-class TeacherDashboardProvider extends ChangeNotifier {
-  final DatabaseHelper _db = DatabaseHelper.instance;
+class WordListItem {
+  final String id;
+  final String title;
+  final String category;
+  final int listOrder;
+  final DateTime createdAt;
 
-  bool isLoading = true;
-  String? errorMessage;
+  WordListItem({
+    required this.id,
+    required this.title,
+    required this.category,
+    required this.listOrder,
+    required this.createdAt,
+  });
+
+  factory WordListItem.fromMap(Map<String, dynamic> map) {
+    return WordListItem(
+      id: map['id'],
+      title: map['title'],
+      category: map['category'] ?? 'Unknown',
+      listOrder: map['list_order'] ?? 0,
+      createdAt: DateTime.parse(map['created_at']),
+    );
+  }
+}
+
+class TeacherProvider extends ChangeNotifier {
+  final DatabaseHelper _db = DatabaseHelper.instance;
+  final supabase = Supabase.instance.client;
+
+  // DASHBOARD STATE
+  bool dashboardLoading = true;
+  String? dashboardError;
 
   double classAverageAccuracy = 0.0;
   String? topPerformerName;
   double? topPerformerAccuracy;
   int needsHelpCount = 0;
-
   List<StudentDashboardItem> students = [];
 
-  TeacherDashboardProvider() {
+  // WORD LISTS STATE
+  bool listsLoading = true;
+  String? listsError;
+  List<WordListItem> wordLists = [];
+
+  TeacherProvider() {
     loadDashboard();
+    loadWordLists();
   }
 
+  // DASHBOARD LOADING
   Future<void> loadDashboard() async {
     try {
-      isLoading = true;
+      dashboardLoading = true;
+      dashboardError = null;
       notifyListeners();
 
       final studentRows = await _db.fetchAllStudents();
@@ -85,17 +123,41 @@ class TeacherDashboardProvider extends ChangeNotifier {
 
       students = items;
       topPerformerName = topName;
-      topPerformerAccuracy =
-      bestAccuracy >= 0 ? bestAccuracy : null;
+      topPerformerAccuracy = bestAccuracy >= 0 ? bestAccuracy : null;
 
-      isLoading = false;
+      dashboardLoading = false;
       notifyListeners();
     } catch (e) {
-      isLoading = false;
-      errorMessage = 'Failed to load dashboard: $e';
+      dashboardLoading = false;
+      dashboardError = 'Failed to load dashboard: $e';
       notifyListeners();
     }
   }
+  Future<void> refreshDashboard() => loadDashboard();
 
-  Future<void> refresh() => loadDashboard();
+  // WORD LIST LOADING
+  Future<void> loadWordLists() async {
+    try {
+      listsLoading = true;
+      listsError = null;
+      notifyListeners();
+
+      final response = await supabase
+          .from('word_lists')
+          .select()
+          .order('list_order', ascending: true);
+
+      wordLists = (response as List)
+          .map((row) => WordListItem.fromMap(row))
+          .toList();
+
+      listsLoading = false;
+      notifyListeners();
+    } catch (e) {
+      listsLoading = false;
+      listsError = 'Failed to load word lists: $e';
+      notifyListeners();
+    }
+  }
+  Future<void> refreshWordLists() => loadWordLists();
 }

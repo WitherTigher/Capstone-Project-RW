@@ -8,9 +8,9 @@ import 'package:readright/services/databaseHelper.dart';
 
 // Providers
 import 'package:readright/providers/studentDashboardProvider.dart';
-import 'package:readright/providers/teacherDashboardProvider.dart';
 import 'package:readright/providers/word_provider.dart';  // ADD THIS
 import 'package:readright/providers/supabase_provider.dart';  // ADD THIS
+import 'package:readright/providers/teacherProvider.dart';
 
 // Screens
 import 'package:readright/screen/login.dart';
@@ -33,6 +33,7 @@ Future<void> main() async {
   const supabaseAnonKey =
       'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ5aG1nZGdqbHlwaHd5aWxyZmptIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE4NDU1NDksImV4cCI6MjA3NzQyMTU0OX0.rkxUJIWYpoPpCV3azuK7vwenPATJeLjzTdTn13savZM';
 
+
   await Supabase.initialize(
     url: supabaseUrl,
     anonKey: supabaseAnonKey,
@@ -46,7 +47,7 @@ Future<void> main() async {
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => StudentDashboardProvider()),
-        ChangeNotifierProvider(create: (_) => TeacherDashboardProvider()),
+        ChangeNotifierProvider(create: (_) => TeacherProvider()),
         // ADD WordProvider with SupabaseProvider
         ChangeNotifierProvider(
           create: (_) => WordProvider(provider: SupabaseProvider()),

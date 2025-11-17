@@ -1,35 +1,48 @@
-/// Represents a single pronunciation attempt by a student.
+
 class Attempt {
-  /// The ID of the word practiced.
+  final String? id;
+  final String userId;
   final String wordId;
-
-  /// The similarity score from 0.0 to 1.0 (after comparing with target audio/text).
-  final double score;
-
-  /// The local or remote path to the recorded audio file.
-  final String? audioPath;
-
-  /// When the attempt was made.
+  final double? score;
+  final String? feedback;
   final DateTime timestamp;
+  final double? duration;
+  final String? recordingUrl;
+  final String? wordText;
 
   Attempt({
+    this.id,
+    required this.userId,
     required this.wordId,
-    required this.score,
-    this.audioPath,
+    this.score,
+    this.feedback,
     required this.timestamp,
+    this.duration,
+    this.recordingUrl,
+    this.wordText,
   });
 
   Map<String, dynamic> toJson() => {
+    'id': id,
+    'user_id': userId,
     'word_id': wordId,
     'score': score,
-    'audio_path': audioPath,
+    'feedback': feedback,
     'timestamp': timestamp.toIso8601String(),
+    'duration': duration,
+    'recording_url': recordingUrl,
+    'word_text': wordText,
   };
 
   factory Attempt.fromJson(Map<String, dynamic> json) => Attempt(
+    id: json['id'],
+    userId: json['user_id'],
     wordId: json['word_id'],
-    score: (json['score'] as num).toDouble(),
-    audioPath: json['audio_path'],
+    score: json['score']?.toDouble(),
+    feedback: json['feedback'],
     timestamp: DateTime.parse(json['timestamp']),
+    duration: json['duration']?.toDouble(),
+    recordingUrl: json['recording_url'],
+    wordText: json['word_text'],
   );
 }

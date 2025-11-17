@@ -1,8 +1,8 @@
 import '../models/word.dart';
-import '../models/attempt.dart' hide Attempt;
+import '../models/attempt.dart';
 
 /// Defines the data interaction contract for the ReadRight app.
-/// Focused on the Word Practice flow (no auth or progress yet).
+/// Focused on the Word Practice flow.
 abstract class ProviderInterface {
   /// Fetch the list of words to practice (e.g., Dolch, Phonics).
   Future<List<Word>> fetchWordList({String category = 'all'});
@@ -17,4 +17,13 @@ abstract class ProviderInterface {
     required double score,
     required String audioPath,
   });
+  
+  /// Fetch the current active word list
+  Future<Map<String, dynamic>?> fetchCurrentWordList();
+  
+  /// Get words for a specific list ID
+  Future<List<Word>> fetchWordsForList(String listId);
+  
+  /// Fetch attempt history for a student
+  Future<List<Attempt>> fetchAttemptHistory({String? studentId, int limit = 50});
 }

@@ -1,7 +1,7 @@
 class Word {
   final String id;
   final String text;
-  final String type; // e.g., Dolch or Phonic
+  final String type; // e.g., Dolch, Phonic, MinimalPairs
   final List<String> sentences;
 
   Word({
@@ -10,13 +10,32 @@ class Word {
     required this.type,
     required this.sentences,
   });
-}
 
-// lib/models/attempt.dart
-class Attempt {
-  final String wordId;
-  final double score;
-  final DateTime timestamp;
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'text': text,
+    'type': type,
+    'sentences': sentences,
+  };
 
-  Attempt({required this.wordId, required this.score, required this.timestamp});
+  factory Word.fromJson(Map<String, dynamic> json) => Word(
+    id: json['id'],
+    text: json['text'],
+    type: json['type'],
+    sentences: (json['sentences'] as List?)?.cast<String>() ?? [],
+  );
+
+  Word copyWith({
+    String? id,
+    String? text,
+    String? type,
+    List<String>? sentences,
+  }) {
+    return Word(
+      id: id ?? this.id,
+      text: text ?? this.text,
+      type: type ?? this.type,
+      sentences: sentences ?? this.sentences,
+    );
+  }
 }

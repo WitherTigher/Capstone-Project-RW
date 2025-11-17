@@ -1,5 +1,10 @@
+import 'dart:convert';
+import 'dart:html' as html;
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:readright/config/config.dart';
+import 'package:readright/services/databaseHelper.dart';
 import 'package:readright/widgets/teacher_base_scaffold.dart';
 
 class TeacherStudentsPage extends StatefulWidget {
@@ -17,7 +22,6 @@ class _TeacherStudentsPage extends State<TeacherStudentsPage> {
     'This Month',
     'Last Month',
     'This Year',
-    'Last Year',
   ];
   void datetimechoice() {
     switch (setrange) {
@@ -37,10 +41,6 @@ class _TeacherStudentsPage extends State<TeacherStudentsPage> {
         start = DateTime(DateTime.now().year, 1, 1);
         end = DateTime.now();
         break;
-      case 'Last Year':
-        start = DateTime(DateTime.now().year - 1, 1, 1);
-        end = DateTime(DateTime.now().year - 1, 12, 31);
-        break;
       default:
         start = DateTime.now();
         end = DateTime.now();
@@ -48,8 +48,25 @@ class _TeacherStudentsPage extends State<TeacherStudentsPage> {
     return;
   }
 
-  void csv() {
-    return;
+  void csv() async {
+    if (setrange == null) {
+      return;
+    }
+    final info = await DatabaseHelper.instance.csvfileMaker(start, end);
+    final head = info.first.keys.toList();
+    final csvtable = [
+      head.join(','),
+      ...info.map((row) => head.map((h) => row[h]?.toString() ?? '').join(',')),
+    ];
+    final beforeprint = csvtable.join('\n');
+    String filename = "StudentExport.csv";
+    final bytes = utf8.encode(beforeprint);
+    final blob = html.Blob([bytes, 'text/csv']);
+    final url = html.Url.createObjectUrlFromBlob(blob);
+    final download = html.AnchorElement(href: url)
+      ..setAttribute('download', filename)
+      ..click();
+    html.Url.revokeObjectUrl(url);
   }
 
   @override
@@ -81,7 +98,7 @@ class _TeacherStudentsPage extends State<TeacherStudentsPage> {
               ),
               ElevatedButton.icon(
                 onPressed: () {
-                  // TODO: Add class report navigation
+                  csv();
                 },
                 icon: const Icon(Icons.analytics_outlined),
                 label: const Text(

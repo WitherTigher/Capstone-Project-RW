@@ -1,4 +1,3 @@
-// lib/providers/provider_interface.dart
 import '../models/word.dart';
 import '../models/attempt.dart' hide Attempt;
 

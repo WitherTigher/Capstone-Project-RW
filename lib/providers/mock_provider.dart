@@ -1,4 +1,3 @@
-// lib/providers/mock_provider.dart
 import 'dart:math';
 import 'provider_interface.dart';
 import '../models/word.dart';

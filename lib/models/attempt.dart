@@ -45,4 +45,6 @@ class Attempt {
     recordingUrl: json['recording_url'],
     wordText: json['word_text'],
   );
+
+  get audioPath => null;
 }

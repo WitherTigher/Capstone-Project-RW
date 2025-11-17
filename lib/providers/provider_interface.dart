@@ -15,7 +15,7 @@ abstract class ProviderInterface {
   Future<Attempt> saveAttempt({
     required String wordId,
     required double score,
-    required String audioPath,
+    required String audioPath, String? recordingUrl, String? feedback, double? duration,
   });
   
   /// Fetch the current active word list
@@ -25,5 +25,5 @@ abstract class ProviderInterface {
   Future<List<Word>> fetchWordsForList(String listId);
   
   /// Fetch attempt history for a student
-  Future<List<Attempt>> fetchAttemptHistory({String? studentId, int limit = 50});
+  Future<List<Attempt>> fetchAttemptHistory({String? studentId, int limit = 50, required String userId});
 }

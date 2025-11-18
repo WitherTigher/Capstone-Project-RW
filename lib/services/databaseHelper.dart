@@ -3,7 +3,6 @@ import 'package:flutter/cupertino.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter/services.dart' show rootBundle;
 
-
 class DatabaseHelper {
   static final DatabaseHelper instance = DatabaseHelper._init();
   final SupabaseClient client = Supabase.instance.client;
@@ -75,29 +74,26 @@ class DatabaseHelper {
   // ------------------ WORD HELPERS ------------------
 
   Future<String?> insertWord(
-      String listId,
-      String text,
-      String type, {
-        List<String>? sentences,
-      }) async {
+    String listId,
+    String text,
+    String type, {
+    List<String>? sentences,
+  }) async {
     final res = await client
         .from('words')
         .insert({
-      'list_id': listId,
-      'text': text,
-      'type': type,
-      'sentences': sentences ?? [],
-    })
+          'list_id': listId,
+          'text': text,
+          'type': type,
+          'sentences': sentences ?? [],
+        })
         .select('id')
         .maybeSingle();
     return res?['id'];
   }
 
   Future<List<Map<String, dynamic>>> fetchWordsByList(String listId) async {
-    final res = await client
-        .from('words')
-        .select()
-        .eq('list_id', listId);
+    final res = await client.from('words').select().eq('list_id', listId);
     return List<Map<String, dynamic>>.from(res);
   }
 
@@ -113,12 +109,12 @@ class DatabaseHelper {
     final res = await client
         .from('attempts')
         .insert({
-      'user_id': userId,
-      'word_id': wordId,
-      'score': score,
-      'feedback': feedback ?? '',
-      'duration': duration ?? 0.0,
-    })
+          'user_id': userId,
+          'word_id': wordId,
+          'score': score,
+          'feedback': feedback ?? '',
+          'duration': duration ?? 0.0,
+        })
         .select('id')
         .maybeSingle();
     return res?['id'];
@@ -147,11 +143,7 @@ class DatabaseHelper {
       return result;
     }
 
-    return {
-      'totalAttempts': 0,
-      'avgScore': 0,
-      'lastAttempt': null,
-    };
+    return {'totalAttempts': 0, 'avgScore': 0, 'lastAttempt': null};
   }
 
   // ------------------ TEACHER DASHBOARD HELPERS ------------------
@@ -160,16 +152,13 @@ class DatabaseHelper {
     final res = await client.from('attempts').select('score');
     if (res.isEmpty) return 0.0;
 
-    final scores =
-    res.map((row) => (row['score'] ?? 0).toDouble()).toList();
+    final scores = res.map((row) => (row['score'] ?? 0).toDouble()).toList();
 
     return scores.reduce((a, b) => a + b) / scores.length;
   }
 
   Future<Map<String, double>> fetchStudentAccuracies() async {
-    final res = await client
-        .from('attempts')
-        .select('user_id, score');
+    final res = await client.from('attempts').select('user_id, score');
 
     final Map<String, List<double>> grouped = {};
 
@@ -181,14 +170,12 @@ class DatabaseHelper {
 
     return {
       for (var id in grouped.keys)
-        id: grouped[id]!.reduce((a, b) => a + b) / grouped[id]!.length
+        id: grouped[id]!.reduce((a, b) => a + b) / grouped[id]!.length,
     };
   }
 
   Future<List<String>> fetchNeedsHelpStudents({double threshold = 70}) async {
-    final attempts = await client
-        .from('attempts')
-        .select('user_id, score');
+    final attempts = await client.from('attempts').select('user_id, score');
 
     final Map<String, List<double>> grouped = {};
 
@@ -199,9 +186,9 @@ class DatabaseHelper {
     }
 
     return grouped.entries
-        .where((e) =>
-    (e.value.reduce((a, b) => a + b) / e.value.length) <
-        threshold)
+        .where(
+          (e) => (e.value.reduce((a, b) => a + b) / e.value.length) < threshold,
+        )
         .map((e) => e.key)
         .toList();
   }
@@ -214,8 +201,9 @@ class DatabaseHelper {
         .order('timestamp', ascending: false)
         .limit(10);
 
-    final scores =
-    res.map<double>((row) => (row['score'] ?? 0).toDouble()).toList();
+    final scores = res
+        .map<double>((row) => (row['score'] ?? 0).toDouble())
+        .toList();
 
     double avg(List<double> s) =>
         s.isEmpty ? 0.0 : s.reduce((a, b) => a + b) / s.length;
@@ -247,16 +235,11 @@ class DatabaseHelper {
     final results = grouped.keys.map((word) {
       final scores = grouped[word]!;
       final avg = scores.reduce((a, b) => a + b) / scores.length;
-      return {
-        'word': word,
-        'avg_score': avg,
-        'attempts': scores.length,
-      };
+      return {'word': word, 'avg_score': avg, 'attempts': scores.length};
     }).toList();
 
     results.sort(
-          (a, b) =>
-          (a['avg_score'] as double).compareTo(b['avg_score'] as double),
+      (a, b) => (a['avg_score'] as double).compareTo(b['avg_score'] as double),
     );
 
     return results.take(limit).toList();
@@ -310,7 +293,8 @@ class DatabaseHelper {
       if (listName == null ||
           listName.isEmpty ||
           wordText == null ||
-          wordText.isEmpty) continue;
+          wordText.isEmpty)
+        continue;
 
       final listId = listNameToId[listName];
       if (listId == null) continue;
@@ -346,6 +330,20 @@ class DatabaseHelper {
     print('Dolch word import complete for file: $csvAssetPath');
   }
 
+  // ------------------ CSV EXPORT ------------------
+  Future<List<Map<String, dynamic>>> csvfileMaker(
+    DateTime start,
+    DateTime end,
+  ) async {
+    final csvfilling = await client
+        .from('attempts')
+        .select(
+          'id,user_id,users(first_name,last_name),word_id,words(text,type),score,feedback,timestamp,duration,created_at,recording_url,word_text',
+        )
+        .gte('created_at', start.toIso8601String())
+        .lte('created_at', end.toIso8601String());
+    return List<Map<String, dynamic>>.from(csvfilling);
+  }
 
   // ------------------ UTILITIES ------------------
 

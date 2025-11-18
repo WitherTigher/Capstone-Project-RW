@@ -50,7 +50,6 @@ class TeacherProvider extends ChangeNotifier {
   final DatabaseHelper _db = DatabaseHelper.instance;
   final supabase = Supabase.instance.client;
 
-  // DASHBOARD STATE
   bool dashboardLoading = true;
   String? dashboardError;
 
@@ -60,7 +59,6 @@ class TeacherProvider extends ChangeNotifier {
   int needsHelpCount = 0;
   List<StudentDashboardItem> students = [];
 
-  // WORD LISTS STATE
   bool listsLoading = true;
   String? listsError;
   List<WordListItem> wordLists = [];
@@ -70,7 +68,6 @@ class TeacherProvider extends ChangeNotifier {
     loadWordLists();
   }
 
-  // DASHBOARD LOADING
   Future<void> loadDashboard() async {
     try {
       dashboardLoading = true;
@@ -79,11 +76,15 @@ class TeacherProvider extends ChangeNotifier {
 
       final studentRows = await _db.fetchAllStudents();
       final accuracyMap = await _db.fetchStudentAccuracies();
-      final needsHelpIds = await _db.fetchNeedsHelpStudents();
       final classAvg = await _db.fetchClassAverageAccuracy();
 
       classAverageAccuracy = classAvg.isNaN ? 0.0 : classAvg;
-      needsHelpCount = needsHelpIds.length;
+
+      // NEW: compute needs-help students (avg accuracy < 70)
+      const threshold = 70.0;
+      needsHelpCount = accuracyMap.values
+          .where((acc) => (acc as num).toDouble() < threshold)
+          .length;
 
       List<StudentDashboardItem> items = [];
       String? topName;
@@ -100,9 +101,10 @@ class TeacherProvider extends ChangeNotifier {
             : email;
 
         final accuracy = (accuracyMap[id] ?? 0.0).toDouble();
+
         final trendData = await _db.fetchTrendForStudent(id);
-        final last5 = trendData['last5'] ?? 0.0;
-        final prev5 = trendData['prev5'] ?? 0.0;
+        final last5 = (trendData['last5'] ?? 0.0).toDouble();
+        final prev5 = (trendData['prev5'] ?? 0.0).toDouble();
         final trendingUp = last5 >= prev5;
 
         if (accuracy > bestAccuracy && accuracy > 0) {
@@ -133,9 +135,9 @@ class TeacherProvider extends ChangeNotifier {
       notifyListeners();
     }
   }
+
   Future<void> refreshDashboard() => loadDashboard();
 
-  // WORD LIST LOADING
   Future<void> loadWordLists() async {
     try {
       listsLoading = true;
@@ -159,5 +161,6 @@ class TeacherProvider extends ChangeNotifier {
       notifyListeners();
     }
   }
+
   Future<void> refreshWordLists() => loadWordLists();
 }

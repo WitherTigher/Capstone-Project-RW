@@ -9,23 +9,18 @@ class DatabaseHelper {
 
   DatabaseHelper._init();
 
-  // ------------------ USER HELPERS ------------------
+  // ---------------------------------------------------------------------------
+  // USER HELPERS
+  // ---------------------------------------------------------------------------
 
   Future<String?> insertUser(Map<String, dynamic> user) async {
-    final res = await client
-        .from('users')
-        .insert(user)
-        .select('id')
-        .maybeSingle();
+    final res = await client.from('users').insert(user).select('id').maybeSingle();
     return res?['id'];
   }
 
   Future<Map<String, dynamic>?> getUserByEmail(String email) async {
-    final res = await client
-        .from('users')
-        .select()
-        .eq('email', email)
-        .maybeSingle();
+    final res =
+    await client.from('users').select().eq('email', email).maybeSingle();
     return res;
   }
 
@@ -43,7 +38,9 @@ class DatabaseHelper {
     return List<Map<String, dynamic>>.from(res);
   }
 
-  // ------------------ WORD LIST HELPERS ------------------
+  // ---------------------------------------------------------------------------
+  // WORD LIST HELPERS
+  // ---------------------------------------------------------------------------
 
   Future<String?> insertWordList(String title, String category) async {
     final res = await client
@@ -55,10 +52,8 @@ class DatabaseHelper {
   }
 
   Future<List<Map<String, dynamic>>> fetchWordLists() async {
-    final res = await client
-        .from('word_lists')
-        .select()
-        .order('list_order', ascending: true);
+    final res =
+    await client.from('word_lists').select().order('list_order', ascending: true);
     return List<Map<String, dynamic>>.from(res);
   }
 
@@ -71,22 +66,24 @@ class DatabaseHelper {
     return res;
   }
 
-  // ------------------ WORD HELPERS ------------------
+  // ---------------------------------------------------------------------------
+  // WORD HELPERS
+  // ---------------------------------------------------------------------------
 
   Future<String?> insertWord(
-    String listId,
-    String text,
-    String type, {
-    List<String>? sentences,
-  }) async {
+      String listId,
+      String text,
+      String type, {
+        List<String>? sentences,
+      }) async {
     final res = await client
         .from('words')
         .insert({
-          'list_id': listId,
-          'text': text,
-          'type': type,
-          'sentences': sentences ?? [],
-        })
+      'list_id': listId,
+      'text': text,
+      'type': type,
+      'sentences': sentences ?? [],
+    })
         .select('id')
         .maybeSingle();
     return res?['id'];
@@ -97,7 +94,9 @@ class DatabaseHelper {
     return List<Map<String, dynamic>>.from(res);
   }
 
-  // ------------------ ATTEMPT HELPERS ------------------
+  // ---------------------------------------------------------------------------
+  // ATTEMPT HELPERS
+  // ---------------------------------------------------------------------------
 
   Future<String?> insertAttempt({
     required String userId,
@@ -109,12 +108,12 @@ class DatabaseHelper {
     final res = await client
         .from('attempts')
         .insert({
-          'user_id': userId,
-          'word_id': wordId,
-          'score': score,
-          'feedback': feedback ?? '',
-          'duration': duration ?? 0.0,
-        })
+      'user_id': userId,
+      'word_id': wordId,
+      'score': score,
+      'feedback': feedback ?? '',
+      'duration': duration ?? 0.0,
+    })
         .select('id')
         .maybeSingle();
     return res?['id'];
@@ -146,14 +145,15 @@ class DatabaseHelper {
     return {'totalAttempts': 0, 'avgScore': 0, 'lastAttempt': null};
   }
 
-  // ------------------ TEACHER DASHBOARD HELPERS ------------------
+  // ---------------------------------------------------------------------------
+  // DASHBOARD AGGREGATIONS
+  // ---------------------------------------------------------------------------
 
   Future<double> fetchClassAverageAccuracy() async {
     final res = await client.from('attempts').select('score');
     if (res.isEmpty) return 0.0;
 
     final scores = res.map((row) => (row['score'] ?? 0).toDouble()).toList();
-
     return scores.reduce((a, b) => a + b) / scores.length;
   }
 
@@ -174,47 +174,76 @@ class DatabaseHelper {
     };
   }
 
-  Future<List<String>> fetchNeedsHelpStudents({double threshold = 70}) async {
-    final attempts = await client.from('attempts').select('user_id, score');
+  Future<List<String>> fetchNeedsHelpStudents({
+    double threshold = 70,
+  }) async {
+    final accuracyMap = await fetchStudentAccuracies();
 
-    final Map<String, List<double>> grouped = {};
-
-    for (var row in attempts) {
-      final id = row['user_id'] as String;
-      final score = (row['score'] ?? 0).toDouble();
-      grouped.putIfAbsent(id, () => []).add(score);
-    }
-
-    return grouped.entries
-        .where(
-          (e) => (e.value.reduce((a, b) => a + b) / e.value.length) < threshold,
-        )
+    return accuracyMap.entries
+        .where((e) => e.value < threshold)
         .map((e) => e.key)
         .toList();
   }
 
-  Future<Map<String, double>> fetchTrendForStudent(String userId) async {
-    final res = await client
+  // ---------------------------------------------------------------------------
+  // TREND CACHE (FOR STUDENT TRENDING UP/DOWN)
+  // ---------------------------------------------------------------------------
+
+  Map<String, Map<String, double>>? _trendCache;
+
+  Future<void> _loadTrendCache() async {
+    final data = await client
         .from('attempts')
-        .select('score')
-        .eq('user_id', userId)
+        .select('user_id, score, timestamp')
         .order('timestamp', ascending: false)
-        .limit(10);
+        .limit(1000);
 
-    final scores = res
-        .map<double>((row) => (row['score'] ?? 0).toDouble())
-        .toList();
+    final Map<String, List<double>> grouped = {};
 
-    double avg(List<double> s) =>
-        s.isEmpty ? 0.0 : s.reduce((a, b) => a + b) / s.length;
+    for (final row in data) {
+      final user = row['user_id'] as String;
+      final score = (row['score'] ?? 0).toDouble();
 
-    final last5 = avg(scores.take(5).toList());
-    final prev5 = avg(scores.skip(5).toList());
+      grouped.putIfAbsent(user, () => []);
+      if (grouped[user]!.length < 10) {
+        grouped[user]!.add(score);
+      }
+    }
 
-    return {'last5': last5, 'prev5': prev5};
+    Map<String, Map<String, double>> trends = {};
+
+    double avg(List<double> list) =>
+        list.isEmpty ? 0.0 : list.reduce((a, b) => a + b) / list.length;
+
+    for (final entry in grouped.entries) {
+      final scores = entry.value;
+      final last5 = avg(scores.take(5).toList());
+      final prev5 = avg(scores.skip(5).take(5).toList());
+
+      trends[entry.key] = {
+        'last5': last5,
+        'prev5': prev5,
+      };
+    }
+
+    _trendCache = trends;
   }
 
-  // ------------------ MOST MISSED WORDS ------------------
+  Future<Map<String, double>> fetchTrendForStudent(String studentId) async {
+    if (_trendCache == null) {
+      await _loadTrendCache();
+    }
+
+    return _trendCache![studentId] ??
+        {
+          'last5': 0.0,
+          'prev5': 0.0,
+        };
+  }
+
+  // ---------------------------------------------------------------------------
+  // MOST MISSED WORDS
+  // ---------------------------------------------------------------------------
 
   Future<List<Map<String, dynamic>>> fetchMostMissedWords({
     int limit = 10,
@@ -239,13 +268,40 @@ class DatabaseHelper {
     }).toList();
 
     results.sort(
-      (a, b) => (a['avg_score'] as double).compareTo(b['avg_score'] as double),
+          (a, b) => (a['avg_score'] as num).compareTo(b['avg_score'] as num),
     );
 
     return results.take(limit).toList();
   }
 
-  // ------------------ CSV IMPORT ------------------
+  // ---------------------------------------------------------------------------
+  // DOLCH IMPORT FLAGS + BATCH IMPORT
+  // ---------------------------------------------------------------------------
+
+  // Heuristic: if there are any words at all, assume Dolch lists are already imported.
+  Future<bool> isDolchImported() async {
+    final existing = await client.from('words').select('id').limit(1);
+    return existing.isNotEmpty;
+  }
+
+  // Import all five Dolch CSV assets in one go.
+  Future<void> importAllDolchLists() async {
+    await importDolchCSV('lib/assets/dolch_pre_primer.csv');
+    await importDolchCSV('lib/assets/dolch_primer.csv');
+    await importDolchCSV('lib/assets/dolch_first_grade.csv');
+    await importDolchCSV('lib/assets/dolch_second_grade.csv');
+    await importDolchCSV('lib/assets/dolch_third_grade.csv');
+  }
+
+  // Currently a no-op; kept for API consistency. You can later wire this
+  // to a dedicated config/app_state table if you want a real flag.
+  Future<void> setDolchImported() async {
+    return;
+  }
+
+  // ---------------------------------------------------------------------------
+  // CSV IMPORT (PER FILE)
+  // ---------------------------------------------------------------------------
 
   Future<void> importDolchCSV(String csvAssetPath) async {
     final csvData = await rootBundle.loadString(csvAssetPath);
@@ -257,7 +313,6 @@ class DatabaseHelper {
       );
     }
 
-    // Collect distinct list names
     final Set<String> listNames = {};
     for (int i = 1; i < rows.length; i++) {
       final listName = rows[i][0]?.toString().trim();
@@ -266,7 +321,6 @@ class DatabaseHelper {
       }
     }
 
-    // Ensure lists exist
     final Map<String, String> listNameToId = {};
 
     for (final listName in listNames) {
@@ -284,41 +338,26 @@ class DatabaseHelper {
       }
     }
 
-    // Insert words only if they don't exist
     for (int i = 1; i < rows.length; i++) {
       final listName = rows[i][0]?.toString().trim();
       final wordText = rows[i][1]?.toString().trim();
       final type = rows[i][2]?.toString().trim();
 
       if (listName == null ||
-          listName.isEmpty ||
           wordText == null ||
-          wordText.isEmpty)
-        continue;
+          listName.isEmpty ||
+          wordText.isEmpty) continue;
 
       final listId = listNameToId[listName];
       if (listId == null) continue;
 
-      // Check if this word already exists for this list
-      final existingWord = await client
-          .from('words')
-          .select('id')
-          .eq('list_id', listId)
-          .eq('text', wordText)
-          .maybeSingle();
-      // skip insertion
-      if (existingWord != null) {
-        continue;
-      }
-
-      // Extract example sentences
-      final List<String> sentences = [];
+      final sentences = <String>[];
       for (int j = 3; j < rows[i].length; j++) {
         final s = rows[i][j]?.toString().trim();
         if (s != null && s.isNotEmpty) sentences.add(s);
       }
 
-      // Insert NEW word
+      // You can optionally check for duplicate (list_id + text) here if needed.
       await client.from('words').insert({
         'list_id': listId,
         'text': wordText,
@@ -330,22 +369,28 @@ class DatabaseHelper {
     print('Dolch word import complete for file: $csvAssetPath');
   }
 
-  // ------------------ CSV EXPORT ------------------
+  // ---------------------------------------------------------------------------
+  // CSV EXPORT FOR TEACHER
+  // ---------------------------------------------------------------------------
+
   Future<List<Map<String, dynamic>>> csvfileMaker(
-    DateTime start,
-    DateTime end,
-  ) async {
-    final csvfilling = await client
+      DateTime start,
+      DateTime end,
+      ) async {
+    final data = await client
         .from('attempts')
         .select(
-          'id,user_id,users(first_name,last_name),word_id,words(text,type),score,feedback,timestamp,duration,created_at,recording_url,word_text',
-        )
+      'id,user_id,users(first_name,last_name),word_id,words(text,type),score,feedback,timestamp,duration,created_at,recording_url,word_text',
+    )
         .gte('created_at', start.toIso8601String())
         .lte('created_at', end.toIso8601String());
-    return List<Map<String, dynamic>>.from(csvfilling);
+
+    return List<Map<String, dynamic>>.from(data);
   }
 
-  // ------------------ UTILITIES ------------------
+  // ---------------------------------------------------------------------------
+  // UTILITIES
+  // ---------------------------------------------------------------------------
 
   Future<void> clearAllData() async {
     await client.from('attempts').delete();

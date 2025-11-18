@@ -20,6 +20,8 @@ dependencies:
   # UI icons
   cupertino_icons: ^1.0.8
 
+  shared_preferences: ^2.2.2
+
   # Firebase
   firebase_core: ^3.15.2
   firebase_auth: ^5.7.0

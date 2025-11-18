@@ -8,9 +8,9 @@ import 'package:readright/services/databaseHelper.dart';
 
 // Providers
 import 'package:readright/providers/studentDashboardProvider.dart';
-import 'package:readright/providers/word_provider.dart';  // ADD THIS
-import 'package:readright/providers/supabase_provider.dart';  // ADD THIS
 import 'package:readright/providers/teacherProvider.dart';
+import 'package:readright/providers/word_provider.dart';
+import 'package:readright/providers/supabase_provider.dart';
 
 // Screens
 import 'package:readright/screen/login.dart';
@@ -79,15 +79,19 @@ class _MyAppState extends State<MyApp> {
   Future<void> _initApp() async {
     try {
       if (!kIsWeb) {
-        await DatabaseHelper.instance.importDolchCSV('lib/assets/dolch_pre_primer.csv');
-        await DatabaseHelper.instance.importDolchCSV('lib/assets/dolch_primer.csv');
-        await DatabaseHelper.instance.importDolchCSV('lib/assets/dolch_first_grade.csv');
-        await DatabaseHelper.instance.importDolchCSV('lib/assets/dolch_second_grade.csv');
-        await DatabaseHelper.instance.importDolchCSV('lib/assets/dolch_third_grade.csv');
-        debugPrint('Seed words imported');
+        final db = DatabaseHelper.instance;
+        final imported = await db.isDolchImported();
+
+        if (!imported) {
+          await db.importAllDolchLists();
+          await db.setDolchImported();
+          debugPrint("Dolch CSV imported (first run)");
+        } else {
+          debugPrint("Dolch import skipped (already imported)");
+        }
       }
     } catch (e) {
-      debugPrint('Seed import skipped: $e');
+      debugPrint("Dolch import error: $e");
     }
 
     final supabase = Supabase.instance.client;
@@ -109,7 +113,7 @@ class _MyAppState extends State<MyApp> {
         _homePage =
         (role == 'teacher') ? const TeacherDashboard() : const StudentDashboard();
       } catch (e) {
-        debugPrint('Role lookup failed: $e');
+        debugPrint("Role lookup failed: $e");
         _homePage = const LoginPage();
       }
     }
@@ -126,9 +130,7 @@ class _MyAppState extends State<MyApp> {
   Widget build(BuildContext context) {
     if (!_initialized || _checkingRole) {
       return const MaterialApp(
-        home: Scaffold(
-          body: Center(child: CircularProgressIndicator()),
-        ),
+        home: Scaffold(body: Center(child: CircularProgressIndicator())),
       );
     }
 
@@ -141,11 +143,6 @@ class _MyAppState extends State<MyApp> {
           secondary: Color(AppConfig.secondaryColor),
         ),
         useMaterial3: false,
-        bottomNavigationBarTheme: const BottomNavigationBarThemeData(
-          type: BottomNavigationBarType.fixed,
-          showSelectedLabels: true,
-          showUnselectedLabels: true,
-        ),
       ),
       home: _homePage,
       routes: {

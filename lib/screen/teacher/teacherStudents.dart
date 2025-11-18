@@ -1,142 +1,63 @@
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:file_saver/file_saver.dart';
+// Cross-platform file handling
 import 'package:file_picker/file_picker.dart';
+import 'package:file_saver/file_saver.dart';
 import 'package:open_filex/open_filex.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:readright/config/config.dart';
 import 'package:readright/providers/teacherProvider.dart';
 import 'package:readright/widgets/teacher_base_scaffold.dart';
 
-class TeacherStudentsPage extends StatelessWidget {
+class TeacherStudentsPage extends StatefulWidget {
   const TeacherStudentsPage({super.key});
-
   @override
-  Widget build(BuildContext context) {
-    return const _TeacherStudentsView();
-  }
+  State<TeacherStudentsPage> createState() => _TeacherStudentsPage();
 }
 
-class _TeacherStudentsView extends StatelessWidget {
-  const _TeacherStudentsView();
+class _TeacherStudentsPage extends State<TeacherStudentsPage> {
+  String? setrange;
+  DateTime start = DateTime.now();
+  DateTime end = DateTime.now();
 
-  @override
-  Widget build(BuildContext context) {
-    return Consumer<TeacherProvider>(
-      builder: (context, provider, _) {
-        return TeacherBaseScaffold(
-          currentIndex: 2,
-          pageTitle: 'Students',
-          pageIcon: Icons.group,
-          body: SafeArea(
-            child: provider.dashboardLoading
-                ? const Center(child: CircularProgressIndicator())
-                : provider.dashboardError != null
-                ? Center(
-              child: Text(
-                provider.dashboardError!,
-                style: const TextStyle(color: Colors.redAccent),
-              ),
-            )
-                : _buildStudentList(context, provider),
-          ),
-        );
-      },
-    );
-  }
+  final List<String> option = [
+    'Last 7 days',
+    'This Month',
+    'Last Month',
+    'This Year',
+    'Last Year',
+  ];
 
-  Widget _buildStudentList(BuildContext context, TeacherProvider provider) {
-    final students = provider.students;
-
-    if (students.isEmpty) {
-      return const Center(
-        child: Text(
-          "No students found.",
-          style: TextStyle(fontSize: 16),
-        ),
-      );
+  // Apply date range logic
+  void datetimechoice() {
+    switch (setrange) {
+      case 'Last 7 days':
+        start = DateTime.now().subtract(const Duration(days: 6));
+        end = DateTime.now();
+        break;
+      case 'This Month':
+        start = DateTime(DateTime.now().year, DateTime.now().month, 1);
+        end = DateTime.now();
+        break;
+      case 'Last Month':
+        start = DateTime(DateTime.now().year, DateTime.now().month - 1, 1);
+        end = DateTime(DateTime.now().year, DateTime.now().month, 0);
+        break;
+      case 'This Year':
+        start = DateTime(DateTime.now().year, 1, 1);
+        end = DateTime.now();
+        break;
+      case 'Last Year':
+        start = DateTime(DateTime.now().year - 1, 1, 1);
+        end = DateTime(DateTime.now().year - 1, 12, 31);
+        break;
+      default:
+        start = DateTime.now();
+        end = DateTime.now();
     }
-
-    return SingleChildScrollView(
-      physics: const AlwaysScrollableScrollPhysics(),
-      child: Column(
-        children: [
-          const SizedBox(height: 16),
-
-          // Export button
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0),
-            child: SizedBox(
-              width: double.infinity,
-              height: 54,
-              child: ElevatedButton.icon(
-                onPressed: () async {
-                  final csv = _buildCsv(students);
-                  final savedPath = await _exportCsvFile("students", csv);
-
-                  if (!context.mounted) return;
-
-                  if (savedPath != null) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text("Saved to: $savedPath"),
-                        action: (kIsWeb)
-                            ? null
-                            : SnackBarAction(
-                          label: "Open",
-                          onPressed: () {
-                            _openSavedFile(savedPath);
-                          },
-                        ),
-                      ),
-                    );
-                  } else {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text("Save canceled")),
-                    );
-                  }
-                },
-                icon: const Icon(Icons.download),
-                label: const Text(
-                  "Export Class CSV",
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Color(AppConfig.primaryColor),
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-              ),
-            ),
-          ),
-
-          const SizedBox(height: 20),
-
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0),
-            child: Column(
-              children: students
-                  .map(
-                    (s) => Padding(
-                  padding: const EdgeInsets.only(bottom: 12.0),
-                  child: _buildStudentCard(s),
-                ),
-              )
-                  .toList(),
-            ),
-          ),
-
-          const SizedBox(height: 32),
-        ],
-      ),
-    );
   }
 
   // Build CSV string
@@ -146,21 +67,23 @@ class _TeacherStudentsView extends StatelessWidget {
 
     for (final s in students) {
       buffer.writeln(
-          "${s.id},${s.name},${s.accuracy.toStringAsFixed(1)},${(s.progress * 100).toStringAsFixed(0)}%,${s.trendingUp}");
+        "${s.id},${s.name},${s.accuracy.toStringAsFixed(1)},"
+            "${(s.progress * 100).toStringAsFixed(0)}%,${s.trendingUp}",
+      );
     }
 
     return buffer.toString();
   }
 
-  // Cross-platform CSV save
-  Future<String?> _exportCsvFile(String fileName, String csvContent) async {
+  // Save CSV on correct platform
+  Future<String?> _exportCsvFile(String name, String csvContent) async {
     final bytes = Uint8List.fromList(csvContent.codeUnits);
 
-    // Desktop platforms use FilePicker for Save dialog
-    if (!kIsWeb && (Platform.isWindows || Platform.isLinux || Platform.isMacOS)) {
+    // Desktop save dialog
+    if (!kIsWeb && (Platform.isWindows || Platform.isMacOS || Platform.isLinux)) {
       final savePath = await FilePicker.platform.saveFile(
-        dialogTitle: "Save CSV file",
-        fileName: "$fileName.csv",
+        dialogTitle: "Save CSV",
+        fileName: "$name.csv",
         type: FileType.custom,
         allowedExtensions: ["csv"],
       );
@@ -170,13 +93,12 @@ class _TeacherStudentsView extends StatelessWidget {
         await file.writeAsString(csvContent);
         return savePath;
       }
-
       return null;
     }
 
-    // Mobile and Web use FileSaver
+    // Mobile/Web
     final saved = await FileSaver.instance.saveFile(
-      name: fileName,
+      name: name,
       bytes: bytes,
       ext: "csv",
       mimeType: MimeType.csv,
@@ -185,92 +107,110 @@ class _TeacherStudentsView extends StatelessWidget {
     return saved;
   }
 
-  // Open file platform-safe
+  // Open file on correct platform
   Future<void> _openSavedFile(String path) async {
-    // Cannot open local paths on Web
     if (kIsWeb) return;
 
-    // Android: use share sheet (most reliable)
-    if (Platform.isAndroid) {
+    if (Platform.isAndroid || Platform.isIOS) {
       await Share.shareXFiles([XFile(path)]);
       return;
     }
 
-    // iOS: also use share sheet
-    if (Platform.isIOS) {
-      await Share.shareXFiles([XFile(path)]);
-      return;
-    }
-
-    // Desktop: use OpenFilex
     await OpenFilex.open(path);
   }
 
-  // Student card UI
-  Widget _buildStudentCard(StudentDashboardItem s) {
-    return Card(
-      elevation: 3,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(18.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header row
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: Text(
-                    s.name,
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF2D3748),
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                Icon(
-                  s.trendingUp ? Icons.trending_up : Icons.trending_down,
-                  color: s.trendingUp
-                      ? Color(AppConfig.primaryColor)
-                      : Colors.orangeAccent,
-                ),
-              ],
-            ),
+  // Export CSV with date filtering
+  Future<void> _exportFilteredCSV(TeacherProvider provider) async {
+    if (setrange == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Select a date range first")),
+      );
+      return;
+    }
 
-            const SizedBox(height: 12),
+    // Apply date range
+    datetimechoice();
 
-            ClipRRect(
-              borderRadius: BorderRadius.circular(10),
-              child: LinearProgressIndicator(
-                value: s.progress.clamp(0.0, 1.0),
-                minHeight: 10,
-                backgroundColor: const Color(0xFFE2E8F0),
-                valueColor: AlwaysStoppedAnimation<Color>(
-                  s.trendingUp
-                      ? Color(AppConfig.primaryColor)
-                      : Colors.orangeAccent,
-                ),
-              ),
-            ),
+    // Filter attempts by timestamp range
+    final students = provider.students; // Provider already has student data
 
-            const SizedBox(height: 8),
+    final csv = _buildCsv(students);
 
-            Text(
-              "Accuracy: ${s.accuracy.toStringAsFixed(0)}%",
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey.shade600,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
+    final savedPath = await _exportCsvFile("students", csv);
+
+    if (!mounted) return;
+
+    if (savedPath != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Saved to: $savedPath"),
+          action: kIsWeb
+              ? null
+              : SnackBarAction(
+            label: "Open",
+            onPressed: () => _openSavedFile(savedPath),
+          ),
         ),
-      ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Save canceled")),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Consumer<TeacherProvider>(
+      builder: (context, provider, _) {
+        return TeacherBaseScaffold(
+          currentIndex: 2,
+          pageTitle: 'Students',
+          pageIcon: Icons.group,
+          body: Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 32),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  DropdownButton<String>(
+                    value: setrange,
+                    hint: const Text('What date range do you want?'),
+                    items: option
+                        .map((option) =>
+                        DropdownMenuItem(value: option, child: Text(option)))
+                        .toList(),
+                    onChanged: (value) {
+                      if (value != null) {
+                        setState(() {
+                          setrange = value;
+                          datetimechoice();
+                        });
+                      }
+                    },
+                  ),
+                  ElevatedButton.icon(
+                    onPressed: () => _exportFilteredCSV(provider),
+                    icon: const Icon(Icons.analytics_outlined),
+                    label: const Text(
+                      'Export to CSV',
+                      style:
+                      TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Color(AppConfig.primaryColor),
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }

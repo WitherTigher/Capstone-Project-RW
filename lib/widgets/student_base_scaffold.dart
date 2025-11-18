@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:readright/config/config.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:readright/widgets/student_navbar.dart';
 
 class StudentBaseScaffold extends StatelessWidget {
   final Widget body;
@@ -62,10 +63,8 @@ class StudentBaseScaffold extends StatelessWidget {
         ],
       ),
       body: body,
-      bottomNavigationBar: BottomNavigationBar(
+      bottomNavigationBar: StudentNavBar(
         currentIndex: currentIndex,
-        selectedItemColor: Color(AppConfig.primaryColor),
-        unselectedItemColor: Colors.grey,
         onTap: (index) {
           switch (index) {
             case 0:
@@ -85,28 +84,6 @@ class StudentBaseScaffold extends StatelessWidget {
               break;
           }
         },
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.dashboard),
-            label: 'Dashboard',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.play_arrow),
-            label: 'Practice',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.list),
-            label: 'Words',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.insights),
-            label: 'Progress',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.feedback),
-            label: 'Feedback',
-          ),
-        ],
       ),
     );
   }

@@ -111,7 +111,9 @@ class _LoginPageState extends State<LoginPage> {
                   border: const OutlineInputBorder(),
                   suffixIcon: IconButton(
                     icon: Icon(
-                      _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                      _obscurePassword
+                          ? Icons.visibility_off
+                          : Icons.visibility,
                     ),
                     onPressed: () {
                       setState(() {
@@ -143,25 +145,37 @@ class _LoginPageState extends State<LoginPage> {
                   child: _isLoading
                       ? const CircularProgressIndicator(color: Colors.white)
                       : const Text(
-                    'Login',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
+                          'Login',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
                 ),
               ),
               const SizedBox(height: 16),
               TextButton(
                 onPressed: () =>
                     Navigator.pushReplacementNamed(context, '/signup'),
-                child: const Text("Don't have an account? Sign up"),
+                child: const Text(
+                  "Don't have an account? Sign up",
+                  style: TextStyle(
+                    fontSize: 18,
+                    color: const Color(0xFF2E7D32),
+                  ),
+                ),
               ),
               const SizedBox(height: 16),
               TextButton(
                 onPressed: () =>
                     Navigator.pushReplacementNamed(context, '/resetPassword'),
-                child: const Text('Forgot your password? Reset here'),
+                child: const Text(
+                  'Forgot your password? Reset here',
+                  style: TextStyle(
+                    fontSize: 18,
+                    color: const Color(0xFF2E7D32),
+                  ),
+                ),
               ),
             ],
           ),

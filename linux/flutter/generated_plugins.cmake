@@ -5,6 +5,7 @@
 list(APPEND FLUTTER_PLUGIN_LIST
   file_saver
   gtk
+  record_linux
   url_launcher_linux
 )
 

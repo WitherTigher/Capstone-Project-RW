@@ -335,8 +335,7 @@ class _PracticePageState extends State<PracticePage> {
   Future<void> _sendToAssessmentServer(File wavFile) async {
     if (_currentWord == null) return;
 
-    final uri = Uri.parse("http://10.0.2.2:5001/assess");
-
+    final uri = Uri.parse("http://127.0.0.1:5001/assess");
     final request = http.MultipartRequest("POST", uri)
       ..files.add(await http.MultipartFile.fromPath("audio_file", wavFile.path))
       ..fields["reference_text"] = _currentWord!.text;

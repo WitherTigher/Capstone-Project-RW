@@ -62,15 +62,14 @@ def assess_pronunciation():
 
         if result.reason != speechsdk.ResultReason.RecognizedSpeech:
             return jsonify({"error": "Could not analyze speech"}), 500
-
+        print("Recognized word: {}".format(result.text))
         return jsonify({"result": json.loads(result.json)})
 
     finally:
         try:
             os.remove(audio_path)
         except:
-            return jsonify({"error": "Could not delete temporary file"})
-
+            pass
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5001, debug=True)

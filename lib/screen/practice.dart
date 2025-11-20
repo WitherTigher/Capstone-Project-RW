@@ -86,6 +86,7 @@ class _PracticePageState extends State<PracticePage> {
   final record = AudioRecorder();
 
   bool _isRecording = false;
+  bool _micIsReady = false;
   bool _loading = true;
   bool _hasPermission = false;
   String? _error;
@@ -313,10 +314,29 @@ class _PracticePageState extends State<PracticePage> {
     final dir = await getTemporaryDirectory();
     final path = "${dir.path}/practice.wav";
 
-    await record.start(const RecordConfig(encoder: AudioEncoder.wav), path: path);
+    // Reset for new recording
+    _micIsReady = false;
+
+    await record.start(
+      RecordConfig(
+        encoder: AudioEncoder.wav,
+        sampleRate: 16000,
+        numChannels: 1,
+      ),
+      path: path,
+    );
 
     _isRecording = true;
     setState(() {});
+
+    // Detect mic readiness via amplitude
+    record.onAmplitudeChanged(const Duration(milliseconds: 100)).listen((amp) {
+      if (!_micIsReady && amp.current != null) {
+        setState(() {
+          _micIsReady = true;
+        });
+      }
+    });
   }
 
   Future<void> _stopRecordingAndSend() async {
@@ -412,6 +432,18 @@ class _PracticePageState extends State<PracticePage> {
                 ? Color(AppConfig.primaryColor)
                 : Colors.grey.shade700,
           ),
+
+          if (_isRecording && !_micIsReady)
+            const Text(
+              "Preparing microphone...",
+              style: TextStyle(fontSize: 18, color: Colors.orange),
+            ),
+
+          if (_isRecording && _micIsReady)
+            const Text(
+              "Mic ready — start speaking!",
+              style: TextStyle(fontSize: 18, color: Colors.green),
+            ),
 
           const SizedBox(height: 16),
 

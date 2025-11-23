@@ -8,7 +8,6 @@ import 'package:readright/config/config.dart';
 import 'package:readright/widgets/student_base_scaffold.dart';
 import 'package:readright/models/word.dart' hide Attempt;
 import 'package:readright/models/attempt.dart';
-// import 'package:flutter_sound/flutter_sound.dart';
 import 'package:http/http.dart' as http;
 import 'package:permission_handler/permission_handler.dart';
 import 'package:path_provider/path_provider.dart';
@@ -17,63 +16,6 @@ import 'dart:convert';
 import 'package:record/record.dart';
 
 import '../models/assessment_result.dart';
-
-
-
-/// MOCK FUNCTION TO UPLOAD RECORDING TO SUPABASE STORAGE
-// Future<String?> uploadRecording(File file, String userId) async {
-//   final supabase = Supabase.instance.client;
-//
-//   // Generate a unique filename
-//   final fileName =
-//       'recordings/$userId/${DateTime.now().millisecondsSinceEpoch}_${p.basename(file.path)}';
-//
-//   // Detect content type (optional)
-//   final mimeType = lookupMimeType(file.path) ?? 'audio/wav';
-//
-//   try {
-//     await supabase.storage.from('Uploads').upload(
-//       fileName,
-//       file,
-//       fileOptions: FileOptions(
-//         cacheControl: '3600',
-//         upsert: false,
-//         contentType: mimeType,
-//       ),
-//     );
-//
-//     // Get a public URL
-//     final publicUrl =
-//     supabase.storage.from('Uploads').getPublicUrl(fileName);
-//
-//     return publicUrl;
-//   } catch (e) {
-//     print('Upload failed: $e');
-//     return null;
-//   }
-// }
-/// THEN STORE THE URL IN THE DATABASE
-// final user = Supabase.instance.client.auth.currentUser;
-// if (user == null) {
-//   ScaffoldMessenger.of(context).showSnackBar(
-//     const SnackBar(content: Text('Please log in to upload recordings.')),
-//   );
-//   return;
-// }
-//
-// // Assume 'audioFile' is a File you just recorded
-// final url = await uploadRecording(audioFile, user.id);
-//
-// if (url != null) {
-//   // Store this URL in Supabase DB
-//   await Supabase.instance.client.from('attempts').insert({
-//     'user_id': user.id,
-//     'word_id': wordId,
-//     'score': analysisScore,
-//     'feedback': feedback,
-//     'recording_url': url, // <-- this is the url to the uploaded file
-//   });
-// }
 
 class PracticePage extends StatefulWidget {
   const PracticePage({super.key});
@@ -156,11 +98,7 @@ class _PracticePageState extends State<PracticePage> {
 
     List<dynamic> rows;
 
-    print('in here');
-    print(mastered);
-
     if (mastered.isEmpty) {
-      print('empty');
       rows = await Supabase.instance.client
           .from('words')
           .select('id,text,type,sentences')
@@ -170,14 +108,12 @@ class _PracticePageState extends State<PracticePage> {
       final inList = mastered.map((id) => '"$id"').join(',');
       final filterValue = '($inList)';
 
-      print('hi');
       rows = await Supabase.instance.client
           .from('words')
           .select('id,text,type,sentences')
           .eq('list_id', listId)
           .not('id', 'in', filterValue)
           .limit(1);
-      print('rows');
     }
 
     if (rows.isEmpty) return null;
@@ -350,7 +286,21 @@ class _PracticePageState extends State<PracticePage> {
   }
 
   // ----------------------------------------------------------------------------
-  // SEND TO FLASK SERVER → STORE ATTEMPT → CHECK MASTER
+  // CHECK WHETHER AUDIO SHOULD BE SAVED
+  // ----------------------------------------------------------------------------
+  Future<bool> _shouldSaveAudio(String userId) async {
+    final res = await Supabase.instance.client
+        .from('users')
+        .select('save_audio')
+        .eq('id', userId)
+        .maybeSingle();
+
+    if (res == null) return false;
+    return res['save_audio'] == true;
+  }
+
+  // ----------------------------------------------------------------------------
+  // SEND TO FLASK SERVER → STORE ATTEMPT → OPTIONAL AUDIO UPLOAD
   // ----------------------------------------------------------------------------
   Future<void> _sendToAssessmentServer(File wavFile) async {
     if (_currentWord == null) return;
@@ -375,30 +325,50 @@ class _PracticePageState extends State<PracticePage> {
     final decoded = jsonDecode(body);
     _assessmentResult = AssessmentResult.fromJson(decoded);
 
-    // -----------------------
-    // STORE ATTEMPT IN DB
-    // -----------------------
     final wordId = _currentWord!.id;
     final score = _assessmentResult?.accuracy ?? 0;
 
-    await _storeAttempt(
-      userId: user.id,
-      wordId: wordId,
-      score: score,
-      feedback: "Good job"
-    );
+    // --------------------------------------------------
+    // SHOULD AUDIO BE SAVED?
+    // --------------------------------------------------
+    final shouldSave = await _shouldSaveAudio(user.id);
 
-    // -----------------------
-    // MASTER WORD IF HIGH ENOUGH
-    // -----------------------
+    String? url;
+
+    if (shouldSave) {
+      try {
+        final fileName =
+            'recordings/${user.id}/${DateTime.now().millisecondsSinceEpoch}.wav';
+
+        await Supabase.instance.client.storage
+            .from('Uploads')
+            .upload(fileName, wavFile);
+
+        url = Supabase.instance.client.storage
+            .from('Uploads')
+            .getPublicUrl(fileName);
+      } catch (e) {
+        debugPrint("Audio upload failed: $e");
+      }
+    }
+
+    // --------------------------------------------------
+    // INSERT ATTEMPT
+    // --------------------------------------------------
+    await Supabase.instance.client.from('attempts').insert({
+      'user_id': user.id,
+      'word_id': wordId,
+      'score': score,
+      'feedback': "Good job",
+      if (url != null) 'recording_url': url,
+      'timestamp': DateTime.now().toIso8601String(),
+    });
+
+    // --------------------------------------------------
+    // MARK WORD MASTERED IF HIGH ENOUGH
+    // --------------------------------------------------
     if (score >= 90) {
-      await _storeMasteredWord(
-        userId: user.id,
-        wordId: wordId,
-      );
-
-      // And immediately load next word
-      // await _loadNextWord();
+      await _storeMasteredWord(userId: user.id, wordId: wordId);
     }
 
     setState(() {});
@@ -499,7 +469,6 @@ class _PracticePageState extends State<PracticePage> {
       pageTitle: 'Practice',
       pageIcon: Icons.play_arrow,
 
-      // KEY LOGIC HERE ↓↓↓
       body: hasAssessment
           ? SafeArea(
         child: SingleChildScrollView(

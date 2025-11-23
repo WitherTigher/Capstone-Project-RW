@@ -174,6 +174,45 @@ class DatabaseHelper {
     };
   }
 
+  /// Average accuracy for a specific list of student IDs.
+  Future<double> fetchAverageAccuracyForStudents(List<String> studentIds) async {
+    if (studentIds.isEmpty) return 0.0;
+
+    final res = await client
+        .from('attempts')
+        .select('score')
+        .filter('user_id', 'in', studentIds);
+
+    if (res.isEmpty) return 0.0;
+
+    final scores = res.map((row) => (row['score'] ?? 0).toDouble()).toList();
+    return scores.reduce((a, b) => a + b) / scores.length;
+  }
+
+  /// Accuracy per student for a specific list of student IDs.
+  Future<Map<String, double>> fetchAccuraciesForStudents(
+      List<String> studentIds) async {
+    if (studentIds.isEmpty) return {};
+
+    final res = await client
+        .from('attempts')
+        .select('user_id, score')
+        .filter('user_id', 'in', studentIds);
+
+    final Map<String, List<double>> grouped = {};
+
+    for (final row in res) {
+      final id = row['user_id'] as String;
+      final score = (row['score'] ?? 0).toDouble();
+      grouped.putIfAbsent(id, () => []).add(score);
+    }
+
+    return {
+      for (final id in grouped.keys)
+        id: grouped[id]!.reduce((a, b) => a + b) / grouped[id]!.length,
+    };
+  }
+
   Future<List<String>> fetchNeedsHelpStudents({
     double threshold = 70,
   }) async {

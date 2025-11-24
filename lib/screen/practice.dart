@@ -376,19 +376,16 @@ class _PracticePageState extends State<PracticePage> {
 
       if (response.statusCode != 200 && goThrough == 3) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Network Error retry's failed")),
+          const SnackBar(content: Text("Network Error retries failed.")),
         );
         _assessmentResult = null;
         setState(() {});
         return;
       } else if (response.statusCode != 200) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Network Error retrying to work")),
+          const SnackBar(content: Text("Retrying...")),
         );
       } else if (response.statusCode == 200) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text("Network is working")));
         continues = false;
         final body = await response.stream.bytesToString();
         final decoded = jsonDecode(body);

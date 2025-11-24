@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:readright/config/config.dart';
+import 'package:readright/screen/teacher/teacherStudentView.dart';
 import 'package:readright/widgets/teacher_base_scaffold.dart';
 import 'package:readright/providers/teacherProvider.dart';
 
@@ -176,17 +177,27 @@ class _TeacherDashboardView extends StatelessWidget {
                                 .map(
                                   (s) => Padding(
                                 padding: const EdgeInsets.only(bottom: 12.0),
-                                child: _buildStudentCard(
-                                  name: s.name,
-                                  progress: s.progress,
-                                  accuracy: s.accuracy.toInt(),
-                                  trend: s.trendingUp
-                                      ? Icons.trending_up
-                                      : Icons.trending_down,
-                                  color: s.trendingUp
-                                      ? Color(AppConfig.primaryColor)
-                                      : Colors.orangeAccent,
-                                ),
+                                child: InkWell(
+                                  onTap: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) => StudentAttemptsScreen(studentId: s.id, studentName: s.name),
+                                      ),
+                                    );
+                                  },
+                                  child: _buildStudentCard(
+                                    name: s.name,
+                                    progress: s.progress,
+                                    accuracy: s.accuracy.toInt(),
+                                    trend: s.trendingUp
+                                        ? Icons.trending_up
+                                        : Icons.trending_down,
+                                    color: s.trendingUp
+                                        ? Color(AppConfig.primaryColor)
+                                        : Colors.orangeAccent,
+                                  )
+                                )
                               ),
                             )
                                 .toList(),

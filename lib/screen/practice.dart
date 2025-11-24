@@ -154,6 +154,7 @@ class _PracticePageState extends State<PracticePage> {
     required String wordId,
     required double score,
     String? feedback,
+    required String recordingUrl,
   }) async {
     await Supabase.instance.client.from('attempts').insert({
       'user_id': userId,
@@ -161,6 +162,7 @@ class _PracticePageState extends State<PracticePage> {
       'score': score,
       'feedback': feedback ?? '',
       'timestamp': DateTime.now().toIso8601String(),
+      'recording_url': recordingUrl
     });
 
     debugPrint('[Practice] Attempt stored for $wordId (score=$score)');
@@ -173,11 +175,16 @@ class _PracticePageState extends State<PracticePage> {
     required String userId,
     required String wordId,
   }) async {
+    try {
+
     await Supabase.instance.client.from('mastered_words').insert({
       'user_id': userId,
       'word_id': wordId,
       'mastered_at': DateTime.now().toIso8601String(),
     });
+    } catch (e) {
+      print("yo err" + e.toString());
+    }
 
     debugPrint('[Practice] MASTERED → $wordId added to mastered_words');
   }
@@ -364,6 +371,7 @@ class _PracticePageState extends State<PracticePage> {
 
     final body = await response.stream.bytesToString();
     final decoded = jsonDecode(body);
+    print('deocoded' + body);
     _assessmentResult = AssessmentResult.fromJson(decoded);
 
     final wordId = _currentWord!.id;
@@ -434,7 +442,7 @@ class _PracticePageState extends State<PracticePage> {
 
     final content = Padding(
       padding: const EdgeInsets.all(24),
-      child: Column(
+      child: _hasPermission ? Column(
         mainAxisAlignment:
         hasAssessment ? MainAxisAlignment.start : MainAxisAlignment.center,
         crossAxisAlignment: CrossAxisAlignment.center,
@@ -515,7 +523,8 @@ class _PracticePageState extends State<PracticePage> {
             const SizedBox(height: 40),
           ],
         ],
-      ),
+      )
+      : Text("You need to enable permissions in the app settings"),
     );
 
     return StudentBaseScaffold(

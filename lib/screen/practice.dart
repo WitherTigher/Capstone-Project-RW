@@ -33,6 +33,10 @@ class _PracticePageState extends State<PracticePage> {
   bool _hasPermission = false;
   String? _error;
 
+  // Countdown fields
+  int _countdown = 0;
+  bool _showCountdown = false;
+
   Word? _currentWord;
   AssessmentResult? _assessmentResult;
 
@@ -250,7 +254,6 @@ class _PracticePageState extends State<PracticePage> {
     final dir = await getTemporaryDirectory();
     final path = "${dir.path}/practice.wav";
 
-    // Reset for new recording
     _micIsReady = false;
 
     await record.start(
@@ -265,11 +268,28 @@ class _PracticePageState extends State<PracticePage> {
     _isRecording = true;
     setState(() {});
 
-    // Detect mic readiness via amplitude
-    record.onAmplitudeChanged(const Duration(milliseconds: 100)).listen((amp) {
+    // Detect mic readiness → start countdown
+    record.onAmplitudeChanged(const Duration(milliseconds: 100)).listen((amp) async {
       if (!_micIsReady && amp.current != null) {
         setState(() {
           _micIsReady = true;
+          _showCountdown = true;
+          _countdown = 3;
+        });
+
+        for (int i = 3; i > 0; i--) {
+          await Future.delayed(const Duration(seconds: 1));
+          if (!mounted) return;
+
+          setState(() {
+            _countdown = i;
+          });
+        }
+
+        if (!mounted) return;
+
+        setState(() {
+          _showCountdown = false;
         });
       }
     });
@@ -297,6 +317,17 @@ class _PracticePageState extends State<PracticePage> {
 
     if (res == null) return false;
     return res['save_audio'] == true;
+  }
+
+  Future<bool> _isWordAlreadyMastered(String userId, String wordId) async {
+    final res = await Supabase.instance.client
+        .from('mastered_words')
+        .select('word_id')
+        .eq('user_id', userId)
+        .eq('word_id', wordId)
+        .maybeSingle();
+
+    return res != null;
   }
 
   // ----------------------------------------------------------------------------
@@ -368,7 +399,11 @@ class _PracticePageState extends State<PracticePage> {
     // MARK WORD MASTERED IF HIGH ENOUGH
     // --------------------------------------------------
     if (score >= 90) {
-      await _storeMasteredWord(userId: user.id, wordId: wordId);
+      final already = await _isWordAlreadyMastered(user.id, wordId);
+
+      if (!already) {
+        await _storeMasteredWord(userId: user.id, wordId: wordId);
+      }
     }
 
     setState(() {});
@@ -380,7 +415,7 @@ class _PracticePageState extends State<PracticePage> {
     super.dispose();
   }
 
-// ---------------------------------------------------------------------------
+  // ---------------------------------------------------------------------------
   // UI
   // ---------------------------------------------------------------------------
   @override
@@ -409,10 +444,20 @@ class _PracticePageState extends State<PracticePage> {
               style: TextStyle(fontSize: 18, color: Colors.orange),
             ),
 
-          if (_isRecording && _micIsReady)
+          if (_isRecording && _showCountdown)
+            Text(
+              "Starting in $_countdown...",
+              style: const TextStyle(
+                fontSize: 28,
+                fontWeight: FontWeight.bold,
+                color: Colors.red,
+              ),
+            ),
+
+          if (_isRecording && _micIsReady && !_showCountdown)
             const Text(
-              "Mic ready — start speaking!",
-              style: TextStyle(fontSize: 18, color: Colors.green),
+              "Speak now!",
+              style: TextStyle(fontSize: 20, color: Colors.green),
             ),
 
           const SizedBox(height: 16),
@@ -433,8 +478,7 @@ class _PracticePageState extends State<PracticePage> {
           ElevatedButton.icon(
             onPressed: _toggleRecording,
             icon: Icon(_isRecording ? Icons.stop : Icons.mic_rounded),
-            label:
-            Text(_isRecording ? 'Stop Recording' : 'Start Recording'),
+            label: Text(_isRecording ? 'Stop Recording' : 'Start Recording'),
             style: ElevatedButton.styleFrom(
               backgroundColor: Color(AppConfig.primaryColor),
               foregroundColor: Colors.white,

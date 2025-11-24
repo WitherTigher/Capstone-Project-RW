@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:readright/services/databaseHelper.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:readright/services/databaseHelper.dart';
 
 class StudentDashboardItem {
   final String id;
@@ -68,46 +68,94 @@ class TeacherProvider extends ChangeNotifier {
     loadWordLists();
   }
 
+  // --------------------------------------------------------------------------
+  // DASHBOARD — FILTERED BY TEACHER'S CLASS
+  // --------------------------------------------------------------------------
   Future<void> loadDashboard() async {
+    dashboardLoading = true;
+    dashboardError = null;
+    notifyListeners();
+
     try {
-      dashboardLoading = true;
-      dashboardError = null;
-      notifyListeners();
+      final teacher = supabase.auth.currentUser;
+      if (teacher == null) {
+        dashboardError = "Not logged in.";
+        dashboardLoading = false;
+        notifyListeners();
+        return;
+      }
 
-      final studentRows = await _db.fetchAllStudents();
-      final accuracyMap = await _db.fetchStudentAccuracies();
-      final classAvg = await _db.fetchClassAverageAccuracy();
+      // STEP 1: Get the teacher's class
+      final classRow = await supabase
+          .from('classes')
+          .select('id')
+          .eq('teacher_id', teacher.id)
+          .maybeSingle();
 
-      classAverageAccuracy = classAvg.isNaN ? 0.0 : classAvg;
+      if (classRow == null || classRow['id'] == null) {
+        dashboardError = "No class assigned to teacher.";
+        dashboardLoading = false;
+        notifyListeners();
+        return;
+      }
 
-      // NEW: compute needs-help students (avg accuracy < 70)
-      const threshold = 70.0;
+      final classId = classRow['id'];
+
+      // STEP 2: Fetch students in this class
+      final studentRows = await supabase
+          .from('users')
+          .select('id, first_name, last_name, email')
+          .eq('role', 'student')
+          .eq('class_id', classId)
+          .order('last_name');
+
+      if (studentRows.isEmpty) {
+        students = [];
+        classAverageAccuracy = 0.0;
+        needsHelpCount = 0;
+        topPerformerName = null;
+        topPerformerAccuracy = null;
+        dashboardLoading = false;
+        notifyListeners();
+        return;
+      }
+
+      final studentIds = studentRows.map<String>((s) => s['id'] as String).toList();
+
+      // STEP 3: Fetch accuracy just for these students
+      final accuracyMap = await _db.fetchAccuraciesForStudents(studentIds);
+      classAverageAccuracy = await _db.fetchAverageAccuracyForStudents(studentIds);
+
+      // STEP 4: Needs help (<70%)
       needsHelpCount = accuracyMap.values
-          .where((acc) => (acc as num).toDouble() < threshold)
+          .where((a) => a < 70)
           .length;
 
+      // STEP 5: Build StudentDashboardItems
       List<StudentDashboardItem> items = [];
       String? topName;
       double bestAccuracy = -1;
 
       for (final s in studentRows) {
-        final id = s['id'] as String;
-        final first = (s['first_name'] ?? '') as String;
-        final last = (s['last_name'] ?? '') as String;
-        final email = (s['email'] ?? '') as String;
+        final id = s['id'];
+        final first = s['first_name'] ?? '';
+        final last = s['last_name'] ?? '';
+        final email = s['email'] ?? '';
 
         final name = (first.isNotEmpty || last.isNotEmpty)
-            ? '$first $last'.trim()
+            ? "$first $last".trim()
             : email;
 
-        final accuracy = (accuracyMap[id] ?? 0.0).toDouble();
+        final accuracy = (accuracyMap[id] ?? 0).toDouble();
 
-        final trendData = await _db.fetchTrendForStudent(id);
-        final last5 = (trendData['last5'] ?? 0.0).toDouble();
-        final prev5 = (trendData['prev5'] ?? 0.0).toDouble();
+        // Trend
+        final trend = await _db.fetchTrendForStudent(id);
+        final last5 = (trend['last5'] ?? 0).toDouble();
+        final prev5 = (trend['prev5'] ?? 0).toDouble();
         final trendingUp = last5 >= prev5;
 
-        if (accuracy > bestAccuracy && accuracy > 0) {
+        // Leaderboard
+        if (accuracy > bestAccuracy) {
           bestAccuracy = accuracy;
           topName = name;
         }
@@ -116,7 +164,7 @@ class TeacherProvider extends ChangeNotifier {
           StudentDashboardItem(
             id: id,
             name: name,
-            progress: (accuracy / 100.0).clamp(0.0, 1.0),
+            progress: (accuracy / 100).clamp(0.0, 1.0),
             accuracy: accuracy,
             trendingUp: trendingUp,
           ),
@@ -130,14 +178,17 @@ class TeacherProvider extends ChangeNotifier {
       dashboardLoading = false;
       notifyListeners();
     } catch (e) {
+      dashboardError = "Failed to load dashboard: $e";
       dashboardLoading = false;
-      dashboardError = 'Failed to load dashboard: $e';
       notifyListeners();
     }
   }
 
   Future<void> refreshDashboard() => loadDashboard();
 
+  // --------------------------------------------------------------------------
+  // WORD LISTS
+  // --------------------------------------------------------------------------
   Future<void> loadWordLists() async {
     try {
       listsLoading = true;
@@ -156,8 +207,8 @@ class TeacherProvider extends ChangeNotifier {
       listsLoading = false;
       notifyListeners();
     } catch (e) {
-      listsLoading = false;
       listsError = 'Failed to load word lists: $e';
+      listsLoading = false;
       notifyListeners();
     }
   }

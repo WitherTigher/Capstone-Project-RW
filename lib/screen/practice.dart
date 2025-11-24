@@ -333,10 +333,20 @@ class _PracticePageState extends State<PracticePage> {
   // ----------------------------------------------------------------------------
   // SEND TO FLASK SERVER → STORE ATTEMPT → OPTIONAL AUDIO UPLOAD
   // ----------------------------------------------------------------------------
+  String _getServerBaseUrl() {
+    // Android emulator → host machine localhost
+    if (Platform.isAndroid) {
+      return "http://10.0.2.2:5001";
+    }
+
+    // Windows, macOS, Linux desktop, iOS simulator
+    return "http://127.0.0.1:5001";
+  }
+
   Future<void> _sendToAssessmentServer(File wavFile) async {
     if (_currentWord == null) return;
 
-    final uri = Uri.parse("http://127.0.0.1:5001/assess");
+    final uri = Uri.parse("${_getServerBaseUrl()}/assess");
     final request = http.MultipartRequest("POST", uri)
       ..files.add(await http.MultipartFile.fromPath("audio_file", wavFile.path))
       ..fields["reference_text"] = _currentWord!.text;

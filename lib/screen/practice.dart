@@ -155,11 +155,7 @@ class _PracticePageState extends State<PracticePage> {
 
     List<dynamic> rows;
 
-    print('in here');
-    print(mastered);
-
     if (mastered.isEmpty) {
-      print('empty');
       rows = await Supabase.instance.client
           .from('words')
           .select('id,text,type,sentences')
@@ -169,14 +165,12 @@ class _PracticePageState extends State<PracticePage> {
       final inList = mastered.map((id) => '"$id"').join(',');
       final filterValue = '($inList)';
 
-      print('hi');
       rows = await Supabase.instance.client
           .from('words')
           .select('id,text,type,sentences')
           .eq('list_id', listId)
           .not('id', 'in', filterValue)
           .limit(1);
-      print('rows');
     }
 
     if (rows.isEmpty) return null;
@@ -377,9 +371,6 @@ class _PracticePageState extends State<PracticePage> {
         userId: user.id,
         wordId: wordId,
       );
-
-      // And immediately load next word
-      // await _loadNextWord();
     }
 
     setState(() {});
@@ -400,7 +391,7 @@ class _PracticePageState extends State<PracticePage> {
 
     final content = Padding(
       padding: const EdgeInsets.all(24),
-      child: Column(
+      child: _hasPermission ? Column(
         mainAxisAlignment:
         hasAssessment ? MainAxisAlignment.start : MainAxisAlignment.center,
         crossAxisAlignment: CrossAxisAlignment.center,
@@ -460,7 +451,8 @@ class _PracticePageState extends State<PracticePage> {
             const SizedBox(height: 40),
           ],
         ],
-      ),
+      )
+      : Text("You need to enable permissions in the app settings"),
     );
 
     return StudentBaseScaffold(

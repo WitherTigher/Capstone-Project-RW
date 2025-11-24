@@ -31,18 +31,19 @@ class _StudentAttemptsScreenState extends State<StudentAttemptsScreen> {
   @override
   void initState() {
     super.initState();
-    player = FlutterSoundPlayer();
     initPlayer();
     fetchAttempts();
   }
 
   Future<void> initPlayer() async {
+    player = FlutterSoundPlayer();
     await player!.openPlayer();
-    await Permission.microphone.request(); // required on iOS
+    await Permission.microphone.request();
   }
 
   @override
   void dispose() {
+    player?.stopPlayer();
     player?.closePlayer();
     super.dispose();
   }
@@ -67,23 +68,28 @@ class _StudentAttemptsScreenState extends State<StudentAttemptsScreen> {
     }
   }
 
-  Future<void> playRecording(String url) async {
-    try {
-      if (isPlaying && currentUrl == url) {
-        await player!.stopPlayer();
-        setState(() => isPlaying = false);
-        return;
-      }
+  Future<void> playRecording(String? url) async {
+    if (url == null || url.isEmpty) return;
 
+    if (player == null) return;
+
+    // Stop if playing same file
+    if (isPlaying && currentUrl == url) {
+      await player!.stopPlayer();
+      setState(() => isPlaying = false);
+      return;
+    }
+
+    try {
       setState(() {
-        isPlaying = true;
         currentUrl = url;
+        isPlaying = true;
       });
 
       await player!.startPlayer(
         fromURI: url,
         whenFinished: () {
-          setState(() => isPlaying = false);
+          if (mounted) setState(() => isPlaying = false);
         },
       );
     } catch (e) {
@@ -97,6 +103,7 @@ class _StudentAttemptsScreenState extends State<StudentAttemptsScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text("${widget.studentName}'s Attempts"),
+        elevation: 1,
       ),
       body: loading
           ? const Center(child: CircularProgressIndicator())
@@ -107,61 +114,136 @@ class _StudentAttemptsScreenState extends State<StudentAttemptsScreen> {
           style: const TextStyle(color: Colors.red),
         ),
       )
-          : attempts.isEmpty
-          ? const Center(child: Text("No attempts yet"))
-          : ListView.builder(
-        padding: const EdgeInsets.all(16),
-        itemCount: attempts.length,
-        itemBuilder: (context, i) {
-          final a = attempts[i];
+          : _buildGroupedList(),
+    );
+  }
 
-          return Card(
-            margin: const EdgeInsets.only(bottom: 12),
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    a['word_text'] ?? 'Unknown word',
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
+  Widget _buildGroupedList() {
+    if (attempts.isEmpty) {
+      return const Center(child: Text("No attempts yet"));
+    }
+
+    // Group attempts by word_text
+    final Map<String, List<dynamic>> grouped = {};
+    for (var a in attempts) {
+      final key = a["word_text"] ?? "Unknown Word";
+      grouped.putIfAbsent(key, () => []);
+      grouped[key]!.add(a);
+    }
+
+    final wordKeys = grouped.keys.toList();
+
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: wordKeys.length,
+      itemBuilder: (context, index) {
+        final word = wordKeys[index];
+        final wordAttempts = grouped[word]!;
+
+        final averageScore = wordAttempts
+            .map((a) => a["score"] ?? 0)
+            .fold(0.0, (a, b) => a + b) /
+            wordAttempts.length;
+
+        return Card(
+          margin: const EdgeInsets.only(bottom: 16),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          elevation: 3,
+          child: Theme(
+            data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+            child: ExpansionTile(
+              tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              childrenPadding:
+              const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              collapsedShape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              title: Text(
+                word,
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF2D3748),
+                ),
+              ),
+              subtitle: Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Text(
+                  "Avg Score: ${averageScore.toStringAsFixed(1)} • ${wordAttempts.length} attempts",
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey.shade600,
                   ),
+                ),
+              ),
+              children: wordAttempts.map((a) {
+                return _buildAttemptTile(a);
+              }).toList(),
+            ),
+          ),
+        );
+      },
+    );
+  }
 
-                  const SizedBox(height: 8),
-                  Text("Score: ${a['score']?.toStringAsFixed(2) ?? '--'}"),
-                  Text("Duration: ${a['duration'] ?? '--'} sec"),
-                  Text("Timestamp: ${a['timestamp']}"),
+  Widget _buildAttemptTile(dynamic a) {
+    final url = a["recording_url"];
 
-                  if (a['feedback'] != null) ...[
-                    const SizedBox(height: 8),
-                    Text("Feedback: ${a['feedback']}"),
-                  ],
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF7FAFC),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            "Attempt on ${a['timestamp']}",
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.grey.shade700,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
 
-                  if (a['recording_url'] != null) ...[
-                    const SizedBox(height: 12),
-                    ElevatedButton.icon(
-                      onPressed: () =>
-                          playRecording(a['recording_url']),
-                      icon: Icon(
-                        isPlaying && currentUrl == a['recording_url']
-                            ? Icons.stop
-                            : Icons.play_arrow,
-                      ),
-                      label: Text(
-                        isPlaying && currentUrl == a['recording_url']
-                            ? "Stop Recording"
-                            : "Play Recording",
-                      ),
-                    ),
-                  ],
-                ],
+          const SizedBox(height: 6),
+
+          Text(
+            "Score: ${a['score']?.toStringAsFixed(1) ?? '--'}",
+            style: const TextStyle(fontSize: 14),
+          ),
+
+          if (a["duration"] != null)
+            Text("Duration: ${a['duration']} sec",
+                style: const TextStyle(fontSize: 14)),
+
+          if (url != null) ...[
+            const SizedBox(height: 12),
+            ElevatedButton.icon(
+              onPressed: () => playRecording(url),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: isPlaying && currentUrl == url
+                    ? Colors.redAccent
+                    : Colors.blueAccent,
+                foregroundColor: Colors.white,
+                minimumSize: const Size(double.infinity, 48),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              icon: Icon(
+                isPlaying && currentUrl == url ? Icons.stop : Icons.play_arrow,
+              ),
+              label: Text(
+                isPlaying && currentUrl == url
+                    ? "Stop Audio"
+                    : "Play Recording",
               ),
             ),
-          );
-        },
+          ],
+        ],
       ),
     );
   }

@@ -207,6 +207,7 @@ class _PracticePageState extends State<PracticePage> {
     required String wordId,
     required double score,
     String? feedback,
+    required String recordingUrl,
   }) async {
     await Supabase.instance.client.from('attempts').insert({
       'user_id': userId,
@@ -214,6 +215,7 @@ class _PracticePageState extends State<PracticePage> {
       'score': score,
       'feedback': feedback ?? '',
       'timestamp': DateTime.now().toIso8601String(),
+      'recording_url': recordingUrl
     });
 
     debugPrint('[Practice] Attempt stored for $wordId (score=$score)');
@@ -226,11 +228,16 @@ class _PracticePageState extends State<PracticePage> {
     required String userId,
     required String wordId,
   }) async {
+    try {
+
     await Supabase.instance.client.from('mastered_words').insert({
       'user_id': userId,
       'word_id': wordId,
       'mastered_at': DateTime.now().toIso8601String(),
     });
+    } catch (e) {
+      print("yo err" + e.toString());
+    }
 
     debugPrint('[Practice] MASTERED → $wordId added to mastered_words');
   }
@@ -348,6 +355,7 @@ class _PracticePageState extends State<PracticePage> {
 
     final body = await response.stream.bytesToString();
     final decoded = jsonDecode(body);
+    print('deocoded' + body);
     _assessmentResult = AssessmentResult.fromJson(decoded);
 
     // -----------------------
@@ -356,11 +364,18 @@ class _PracticePageState extends State<PracticePage> {
     final wordId = _currentWord!.id;
     final score = _assessmentResult?.accuracy ?? 0;
 
+    final name = 'audio_${DateTime.now().millisecondsSinceEpoch}.wav';
+    final fileName = await Supabase.instance.client.storage.from('Uploads').upload(
+      'private/' + name,
+      wavFile,
+    );
+
     await _storeAttempt(
       userId: user.id,
       wordId: wordId,
       score: score,
-      feedback: "Good job"
+      feedback: "Good job",
+      recordingUrl: "https://byhmgdgjlyphwyilrfjm.supabase.co/storage/v1/object/public/Uploads/private/" + name
     );
 
     // -----------------------

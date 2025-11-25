@@ -53,6 +53,7 @@ dependencies:
   http: ^1.1.0
   permission_handler: ^11.0.0
   record: any
+  mockito: ^5.6.1
 
 # ---------------------------------------------------------------------------
 # Dev Dependencies

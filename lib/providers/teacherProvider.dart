@@ -85,7 +85,52 @@ class TeacherProvider extends ChangeNotifier {
       mostMissedError = null;
       notifyListeners();
 
-      mostMissedWords = await _db.fetchMostMissedWords(limit: 10);
+      final teacher = supabase.auth.currentUser;
+      if (teacher == null) {
+        mostMissedError = "Not logged in.";
+        mostMissedLoading = false;
+        notifyListeners();
+        return;
+      }
+
+      // Find the teacher’s class
+      final classRow = await supabase
+          .from('classes')
+          .select('id')
+          .eq('teacher_id', teacher.id)
+          .maybeSingle();
+
+      if (classRow == null || classRow['id'] == null) {
+        mostMissedWords = [];
+        mostMissedLoading = false;
+        notifyListeners();
+        return;
+      }
+
+      final classId = classRow['id'];
+
+      // Get students in this class
+      final studentRows = await supabase
+          .from('users')
+          .select('id')
+          .eq('role', 'student')
+          .eq('class_id', classId);
+
+      if (studentRows.isEmpty) {
+        mostMissedWords = [];
+        mostMissedLoading = false;
+        notifyListeners();
+        return;
+      }
+
+      final studentIds =
+      studentRows.map<String>((s) => s['id'] as String).toList();
+
+      // Get most missed words only for these students
+      mostMissedWords = await _db.fetchMostMissedWordsForStudents(
+        studentIds,
+        limit: 10,
+      );
 
       mostMissedLoading = false;
       notifyListeners();

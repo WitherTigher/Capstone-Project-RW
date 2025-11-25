@@ -6,7 +6,16 @@ import 'package:readright/services/databaseHelper.dart';
 import 'package:readright/widgets/student_base_scaffold.dart';
 
 class ProgressPage extends StatefulWidget {
-  const ProgressPage({super.key});
+  final SupabaseClient? testClient;
+  final bool skipLoad;
+  final bool testStartLoaded;
+
+  const ProgressPage({
+    super.key,
+    this.testClient,
+    this.skipLoad = false,
+    this.testStartLoaded = false,
+  });
 
   @override
   State<ProgressPage> createState() => _ProgressPageState();
@@ -20,11 +29,20 @@ class _ProgressPageState extends State<ProgressPage> {
   @override
   void initState() {
     super.initState();
-    _loadProgress();
+
+    // Test override: force UI loaded
+    if (widget.testStartLoaded) {
+      isLoading = false;
+      return;
+    }
+
+    if (!widget.skipLoad) {
+      _loadProgress();
+    }
   }
 
   Future<void> _loadProgress() async {
-    final supabase = Supabase.instance.client;
+    final supabase = widget.testClient ?? Supabase.instance.client;
     final currentUser = supabase.auth.currentUser;
     if (currentUser == null) return;
 
@@ -42,9 +60,8 @@ class _ProgressPageState extends State<ProgressPage> {
       });
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error loading progress: $e')),
-      );
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Error loading progress: $e')));
       setState(() => isLoading = false);
     }
   }

@@ -16,7 +16,15 @@ import '../models/assessment_result.dart';
 import 'package:confetti/confetti.dart';
 
 class PracticePage extends StatefulWidget {
-  const PracticePage({super.key});
+  final bool testMode;
+  final bool skipLoad;
+
+  const PracticePage({
+    super.key,
+    this.testMode = false,
+    this.skipLoad = false,
+  });
+
   @override
   State<PracticePage> createState() => _PracticePageState();
 }
@@ -30,7 +38,6 @@ class _PracticePageState extends State<PracticePage> {
   bool _hasPermission = false;
   String? _error;
 
-  // Countdown fields
   int _countdown = 0;
   bool _showCountdown = false;
 
@@ -43,13 +50,21 @@ class _PracticePageState extends State<PracticePage> {
   void initState() {
     super.initState();
     _confettiController = ConfettiController(duration: const Duration(seconds: 2));
-    _initRecording();
-    _loadNextWord();
+
+    if (!widget.testMode) {
+      _initRecording();
+    } else {
+      _hasPermission = true;
+    }
+
+    if (!widget.skipLoad) {
+      _loadNextWord();
+    } else {
+      _loading = false;
+      _currentWord = Word(id: "test", text: "cat", type: "word", sentences: []);
+    }
   }
 
-  // ----------------------------------------------------------------------------
-  // INIT recorder
-  // ----------------------------------------------------------------------------
   Future<void> _initRecording() async {
     final mic = await Permission.microphone.request();
     if (!mic.isGranted) {
@@ -59,9 +74,6 @@ class _PracticePageState extends State<PracticePage> {
     _hasPermission = true;
   }
 
-  // ----------------------------------------------------------------------------
-  // CURRENT LIST
-  // ----------------------------------------------------------------------------
   Future<Map<String, dynamic>?> _fetchCurrentListRecord(String userId) async {
     final result = await Supabase.instance.client.rpc(
       'get_current_list_for_student',
@@ -79,9 +91,6 @@ class _PracticePageState extends State<PracticePage> {
     return null;
   }
 
-  // ----------------------------------------------------------------------------
-  // NEXT UNMASTERED WORD
-  // ----------------------------------------------------------------------------
   Future<Map<String, dynamic>?> _fetchUnmasteredWord(
       String userId, String listId) async {
     final mastered = await _masteredWordIdList(userId);
@@ -115,9 +124,6 @@ class _PracticePageState extends State<PracticePage> {
     };
   }
 
-  // ----------------------------------------------------------------------------
-  // MASTERED WORDS LIST
-  // ----------------------------------------------------------------------------
   Future<List<String>> _masteredWordIdList(String userId) async {
     final rows = await Supabase.instance.client
         .from('mastered_words')
@@ -130,9 +136,6 @@ class _PracticePageState extends State<PracticePage> {
         .toList();
   }
 
-  // ----------------------------------------------------------------------------
-  // INSERT MASTERED WORD
-  // ----------------------------------------------------------------------------
   Future<void> _storeMasteredWord({
     required String userId,
     required String wordId,
@@ -146,10 +149,15 @@ class _PracticePageState extends State<PracticePage> {
     } catch (_) {}
   }
 
-  // ----------------------------------------------------------------------------
-  // LOAD NEXT WORD
-  // ----------------------------------------------------------------------------
   Future<void> _loadNextWord() async {
+    // ADDED — skip ALL Supabase/logic during tests
+    if (widget.testMode) {
+      _loading = false;
+      _currentWord = Word(id: "test", text: "cat", type: "word", sentences: []);
+      setState(() {});
+      return;
+    }
+
     _assessmentResult = null;
     _error = null;
     _loading = true;
@@ -196,9 +204,6 @@ class _PracticePageState extends State<PracticePage> {
     setState(() {});
   }
 
-  // ----------------------------------------------------------------------------
-  // RECORDING LOGIC
-  // ----------------------------------------------------------------------------
   Future<void> _toggleRecording() async {
     if (!_hasPermission) {
       ScaffoldMessenger.of(context)
@@ -263,9 +268,6 @@ class _PracticePageState extends State<PracticePage> {
     await _sendToAssessmentServer(File(path));
   }
 
-  // ----------------------------------------------------------------------------
-  // CHECK WHETHER AUDIO SHOULD BE SAVED
-  // ----------------------------------------------------------------------------
   Future<bool> _shouldSaveAudio(String userId) async {
     final res = await Supabase.instance.client
         .from('users')
@@ -288,9 +290,6 @@ class _PracticePageState extends State<PracticePage> {
     return res != null;
   }
 
-  // ----------------------------------------------------------------------------
-  // SEND TO FLASK SERVER → STORE ATTEMPT → OPTIONAL AUDIO UPLOAD
-  // ----------------------------------------------------------------------------
   String _getServerBaseUrl() {
     if (Platform.isAndroid) return "http://10.0.2.2:5001";
     return "http://127.0.0.1:5001";
@@ -368,7 +367,6 @@ class _PracticePageState extends State<PracticePage> {
 
         await Supabase.instance.client.from('attempts').insert(attemptRow);
 
-        // MASTERED WORD CHECK
         if (score >= 90) {
           final already = await _isWordAlreadyMastered(user.id, wordId);
           if (!already) {
@@ -390,9 +388,6 @@ class _PracticePageState extends State<PracticePage> {
     super.dispose();
   }
 
-  // ---------------------------------------------------------------------------
-  // UI
-  // ---------------------------------------------------------------------------
   @override
   Widget build(BuildContext context) {
     final bool hasAssessment = _assessmentResult != null;
@@ -486,7 +481,7 @@ class _PracticePageState extends State<PracticePage> {
           )
               : SafeArea(child: Center(child: content)),
 
-          Align( // ADDED
+          Align(
             alignment: Alignment.topCenter,
             child: ConfettiWidget(
               confettiController: _confettiController,

@@ -1,82 +1,92 @@
-// test/screens/progress_page_test.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:readright/screen/progress.dart';
 
 void main() {
-  testWidgets('ProgressPage should display loading indicator initially', (
-    WidgetTester tester,
-  ) async {
-    // Build the widget
-    await tester.pumpWidget(const MaterialApp(home: ProgressPage()));
+  testWidgets('ProgressPage should display loading indicator initially',
+          (WidgetTester tester) async {
+        await tester.pumpWidget(const MaterialApp(
+          home: ProgressPage(skipLoad: true),
+        ));
 
-    // Verify loading indicator
-    expect(find.byType(CircularProgressIndicator), findsOneWidget);
-  });
+        expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      });
 
-  testWidgets('ProgressPage should have Overall Performance header', (
-    WidgetTester tester,
-  ) async {
-    // Build the widget
-    await tester.pumpWidget(const MaterialApp(home: ProgressPage()));
+  testWidgets('ProgressPage should have Overall Performance header',
+          (WidgetTester tester) async {
+        await tester.pumpWidget(const MaterialApp(
+          home: ProgressPage(
+            skipLoad: true,
+            testStartLoaded: true,
+          ),
+        ));
 
-    await tester.pump(const Duration(milliseconds: 100));
+        await tester.pump();
 
-    // Look for the header text
-    expect(find.textContaining('Overall Performance'), findsWidgets);
-  });
+        expect(find.textContaining('Overall Performance'), findsWidgets);
+      });
 
-  testWidgets('ProgressPage should display stats card', (
-    WidgetTester tester,
-  ) async {
-    // Build the widget
-    await tester.pumpWidget(const MaterialApp(home: ProgressPage()));
+  testWidgets('ProgressPage should display stats card',
+          (WidgetTester tester) async {
+        await tester.pumpWidget(const MaterialApp(
+          home: ProgressPage(
+            skipLoad: true,
+            testStartLoaded: true,
+          ),
+        ));
 
-    await tester.pump(const Duration(milliseconds: 100));
+        await tester.pump();
 
-    // Verify Stats header exists
-    expect(find.text('Stats'), findsWidgets);
-  });
+        expect(find.text('Stats'), findsWidgets);
+      });
 
-  testWidgets('ProgressPage should display Recent Practice Sessions card', (
-    WidgetTester tester,
-  ) async {
-    // Build the widget
-    await tester.pumpWidget(const MaterialApp(home: ProgressPage()));
+  testWidgets('ProgressPage should display Recent Practice Sessions card',
+          (WidgetTester tester) async {
+        await tester.pumpWidget(const MaterialApp(
+          home: ProgressPage(
+            skipLoad: true,
+            testStartLoaded: true,
+          ),
+        ));
 
-    await tester.pump(const Duration(milliseconds: 100));
+        await tester.pump();
 
-    // Verify Recent Practice Sessions header
-    expect(find.textContaining('Recent Practice Sessions'), findsWidgets);
-  });
+        expect(find.textContaining('Recent Practice Sessions'), findsWidgets);
+      });
 
-  testWidgets('ProgressPage should be scrollable', (WidgetTester tester) async {
-    // Build the widget
-    await tester.pumpWidget(const MaterialApp(home: ProgressPage()));
+  testWidgets('ProgressPage should be scrollable',
+          (WidgetTester tester) async {
+        await tester.pumpWidget(const MaterialApp(
+          home: ProgressPage(
+            skipLoad: true,
+            testStartLoaded: true,
+          ),
+        ));
 
-    await tester.pump(const Duration(milliseconds: 100));
+        await tester.pump();
 
-    // Verify SingleChildScrollView exists
-    expect(find.byType(SingleChildScrollView), findsOneWidget);
-  });
+        expect(find.byType(SingleChildScrollView), findsOneWidget);
+      });
 
   testWidgets(
-    'ProgressPage should display average score circle when data loads',
-    (WidgetTester tester) async {
-      // Build the widget
-      await tester.pumpWidget(const MaterialApp(home: ProgressPage()));
+      'ProgressPage should display average score circle when data loads',
+          (WidgetTester tester) async {
+        await tester.pumpWidget(const MaterialApp(
+          home: ProgressPage(
+            skipLoad: true,
+            testStartLoaded: true,
+          ),
+        ));
 
-      await tester.pumpAndSettle();
+        await tester.pump();
 
-      // Look for Container with circular decoration (the score circle)
-      final circleFinder = find.byWidgetPredicate(
-        (widget) =>
-            widget is Container &&
-            widget.decoration is BoxDecoration &&
-            (widget.decoration as BoxDecoration).shape == BoxShape.circle,
-      );
+        final circleFinder = find.byWidgetPredicate((widget) {
+          if (widget is! Container) return false;
+          final decoration = widget.decoration;
+          return decoration is BoxDecoration &&
+              decoration.shape == BoxShape.circle;
+        });
 
-      expect(circleFinder, findsWidgets);
-    },
-  );
+        expect(circleFinder, findsWidgets);
+      });
 }

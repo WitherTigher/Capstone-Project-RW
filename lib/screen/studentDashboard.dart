@@ -5,7 +5,14 @@ import 'package:readright/widgets/student_base_scaffold.dart';
 import 'package:readright/providers/studentDashboardProvider.dart';
 
 class StudentDashboard extends StatefulWidget {
-  const StudentDashboard({super.key});
+  final bool skipLoad;
+  final bool testStartLoaded;
+
+  const StudentDashboard({
+    super.key,
+    this.skipLoad = false,
+    this.testStartLoaded = false,
+  });
 
   @override
   State<StudentDashboard> createState() => _StudentDashboardState();
@@ -15,6 +22,19 @@ class _StudentDashboardState extends State<StudentDashboard> {
   @override
   void initState() {
     super.initState();
+
+    // ADDED FOR TESTS
+    if (widget.testStartLoaded) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        context.read<StudentDashboardProvider>().isLoading = false;
+      });
+      return;
+    }
+
+    if (widget.skipLoad) {
+      return;
+    }
+    // END TEST CODE
 
     // Load dashboard on first frame
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -46,9 +66,6 @@ class _StudentDashboardState extends State<StudentDashboard> {
     );
   }
 
-  // ----------------------------------------------------------------------
-  // UI CONTENT
-  // ----------------------------------------------------------------------
   Widget _buildDashboardContent(StudentDashboardProvider dashboard) {
     final user = dashboard.userInfo;
     final list = dashboard.currentList;
@@ -90,7 +107,6 @@ class _StudentDashboardState extends State<StudentDashboard> {
 
           const SizedBox(height: 40),
 
-          // Progress Header
           Text(
             'Progress in current list: $title',
             style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
@@ -98,7 +114,6 @@ class _StudentDashboardState extends State<StudentDashboard> {
           ),
           const SizedBox(height: 20),
 
-          // Progress Bar
           LinearProgressIndicator(
             value: progress,
             minHeight: 12,
@@ -116,7 +131,6 @@ class _StudentDashboardState extends State<StudentDashboard> {
 
           const Spacer(),
 
-          // Start Practice
           SizedBox(
             width: double.infinity,
             height: 55,

@@ -2,7 +2,14 @@ import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class StudentDashboardProvider extends ChangeNotifier {
-  final SupabaseClient client = Supabase.instance.client;
+  SupabaseClient? client;                    // CHANGED (was final Supabase.instance)
+  final bool testMode;                       // ADDED
+
+  StudentDashboardProvider({this.testMode = false}) {
+    if (!testMode) {
+      client = Supabase.instance.client;     // ONLY called in real app
+    }
+  }
 
   bool isLoading = true;
   String? errorMessage;
@@ -20,11 +27,20 @@ class StudentDashboardProvider extends ChangeNotifier {
   // ----------------------------------------------------------------------
 
   Future<void> loadDashboard() async {
+
+    // ADDED FOR TESTING: disable all Supabase access
+    if (testMode) {
+      isLoading = false;
+      notifyListeners();
+      return;
+    }
+    // END ADDED
+
     isLoading = true;
     errorMessage = null;
     notifyListeners();
 
-    final user = client.auth.currentUser;
+    final user = client!.auth.currentUser;
     if (user == null) {
       errorMessage = "User not logged in.";
       isLoading = false;
@@ -52,7 +68,7 @@ class StudentDashboardProvider extends ChangeNotifier {
   // ----------------------------------------------------------------------
 
   Future<void> _loadUserInfo(String userId) async {
-    final res = await client
+    final res = await client!
         .from('users')
         .select('id, first_name, last_name, email, current_list_int, class_id, classes(name)')
         .eq('id', userId)
@@ -72,7 +88,7 @@ class StudentDashboardProvider extends ChangeNotifier {
   // ----------------------------------------------------------------------
 
   Future<void> _loadCurrentList(String userId) async {
-    final rpc = await client.rpc(
+    final rpc = await client!.rpc(
       'get_current_list_for_student',
       params: {'user_id_input': userId},
     );
@@ -89,7 +105,7 @@ class StudentDashboardProvider extends ChangeNotifier {
     final listId = rpc['list_id'] as String;
 
     // Fetch list details
-    final listRow = await client
+    final listRow = await client!
         .from('word_lists')
         .select('id, title, list_order')
         .eq('id', listId)
@@ -117,7 +133,7 @@ class StudentDashboardProvider extends ChangeNotifier {
     final listId = currentList!['id'] as String;
 
     // Total words in this list
-    final words = await client
+    final words = await client!
         .from('words')
         .select('id')
         .eq('list_id', listId);
@@ -125,7 +141,7 @@ class StudentDashboardProvider extends ChangeNotifier {
     totalWords = words.length;
 
     // Mastered words for this user
-    final mastered = await client
+    final mastered = await client!
         .from('mastered_words')
         .select('word_id')
         .eq('user_id', userId);
@@ -137,7 +153,7 @@ class StudentDashboardProvider extends ChangeNotifier {
         words.where((row) => masteredIDs.contains(row['id'])).length;
 
     // Accuracy (optional)
-    final attempts = await client
+    final attempts = await client!
         .from('attempts')
         .select('score')
         .eq('user_id', userId)
@@ -160,7 +176,7 @@ class StudentDashboardProvider extends ChangeNotifier {
   // ----------------------------------------------------------------------
 
   Future<void> _loadRecentAttempts(String userId) async {
-    final res = await client
+    final res = await client!
         .from('attempts')
         .select('score, timestamp, words(text)')
         .eq('user_id', userId)

@@ -35,318 +35,331 @@ class _TeacherDashboardView extends StatelessWidget {
                 physics: const AlwaysScrollableScrollPhysics(),
                 child: Column(
                   children: [
-                    // HEADER
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(24.0),
-                      decoration: const BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.only(
-                          bottomLeft: Radius.circular(24),
-                          bottomRight: Radius.circular(24),
+
+                    // ----------------------------------------------------
+                    // CREATE CLASS FORM (IF TEACHER HAS NO CLASS)
+                    // ----------------------------------------------------
+                    if (provider.needsClassCreated)
+                      _CreateClassCard(provider: provider),
+
+                    // ----------------------------------------------------
+                    // STOP HERE — DO NOT SHOW DASHBOARD IF NO CLASS
+                    // ----------------------------------------------------
+                    if (!provider.needsClassCreated) ...[
+
+                      const SizedBox(height: 20),
+
+                      // HEADER
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(24.0),
+                        decoration: const BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.only(
+                            bottomLeft: Radius.circular(24),
+                            bottomRight: Radius.circular(24),
+                          ),
                         ),
-                      ),
-                      child: Column(
-                        children: [
-                          Icon(
-                            Icons.school,
-                            size: 64,
-                            color: Color(AppConfig.primaryColor),
-                          ),
-                          const SizedBox(height: 12),
-                          const Text(
-                            'Class Progress Overview',
-                            style: TextStyle(
-                              fontSize: 22,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFF2D3748),
+                        child: Column(
+                          children: [
+                            Icon(
+                              Icons.school,
+                              size: 64,
+                              color: Color(AppConfig.primaryColor),
                             ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Monitor each student’s pronunciation and improvement',
-                            style: TextStyle(
-                              fontSize: 16,
-                              color: Colors.grey.shade600,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    const SizedBox(height: 20),
-
-                    // LOADING STATE
-                    if (provider.dashboardLoading)
-                      const Padding(
-                        padding: EdgeInsets.only(top: 40.0),
-                        child: Center(child: CircularProgressIndicator()),
-                      )
-
-                    // ERROR STATE
-                    else if (provider.dashboardError != null)
-                      Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Text(
-                          provider.dashboardError!,
-                          style: const TextStyle(
-                            color: Colors.redAccent,
-                            fontWeight: FontWeight.w600,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      )
-
-                    // MAIN CONTENT
-                    else ...[
-                        // CLASS SUMMARY CARD
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                          child: Card(
-                            elevation: 3,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                            child: Padding(
-                              padding: const EdgeInsets.all(20.0),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    children: [
-                                      Icon(
-                                        Icons.bar_chart,
-                                        color: Color(AppConfig.primaryColor),
-                                      ),
-                                      const SizedBox(width: 8),
-                                      const Text(
-                                        'Class Performance Summary',
-                                        style: TextStyle(
-                                          fontSize: 18,
-                                          fontWeight: FontWeight.w600,
-                                          color: Color(0xFF2D3748),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 16),
-                                  Row(
-                                    mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      _buildStatTile(
-                                        'Avg. Accuracy',
-                                        '${provider.classAverageAccuracy.toStringAsFixed(0)}%',
-                                        Color(AppConfig.primaryColor),
-                                      ),
-                                      _buildStatTile(
-                                        'Top Performer',
-                                        provider.topPerformerName ?? 'No data',
-                                        Color(AppConfig.secondaryColor),
-                                      ),
-                                      _buildStatTile(
-                                        'Needs Help',
-                                        '${provider.needsHelpCount} Students',
-                                        Colors.redAccent,
-                                      ),
-                                    ],
-                                  ),
-                                ],
+                            const SizedBox(height: 12),
+                            const Text(
+                              'Class Progress Overview',
+                              style: TextStyle(
+                                fontSize: 22,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF2D3748),
                               ),
                             ),
-                          ),
-                        ),
-
-                        const SizedBox(height: 20),
-
-                        // --------------------------------------------------
-                        // MOST MISSED WORDS
-                        // --------------------------------------------------
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                          child: Card(
-                            elevation: 3,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Monitor each student’s pronunciation and improvement',
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: Colors.grey.shade600,
+                              ),
                             ),
-                            child: Padding(
-                              padding: const EdgeInsets.all(20.0),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    children: [
-                                      const Icon(Icons.warning_amber_rounded,
-                                          color: Colors.orange),
-                                      const SizedBox(width: 8),
-                                      const Text(
-                                        'Most Missed Words',
-                                        style: TextStyle(
-                                          fontSize: 18,
-                                          fontWeight: FontWeight.w600,
+                          ],
+                        ),
+                      ),
+
+                      const SizedBox(height: 20),
+
+                      // LOADING STATE
+                      if (provider.dashboardLoading)
+                        const Padding(
+                          padding: EdgeInsets.only(top: 40.0),
+                          child: Center(child: CircularProgressIndicator()),
+                        )
+
+                      // ERROR STATE
+                      else if (provider.dashboardError != null)
+                        Padding(
+                          padding: const EdgeInsets.all(16.0),
+                          child: Text(
+                            provider.dashboardError!,
+                            style: const TextStyle(
+                              color: Colors.redAccent,
+                              fontWeight: FontWeight.w600,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        )
+
+                      // MAIN CONTENT
+                      else ...[
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                            child: Card(
+                              elevation: 3,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              child: Padding(
+                                padding: const EdgeInsets.all(20.0),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Icon(
+                                          Icons.bar_chart,
+                                          color: Color(AppConfig.primaryColor),
                                         ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 12),
-
-                                  if (provider.mostMissedLoading)
-                                    const Center(
-                                        child: CircularProgressIndicator()),
-
-                                  if (!provider.mostMissedLoading &&
-                                      provider.mostMissedError != null)
-                                    Text(
-                                      provider.mostMissedError!,
-                                      style:
-                                      const TextStyle(color: Colors.red),
-                                    ),
-
-                                  if (!provider.mostMissedLoading &&
-                                      provider.mostMissedError == null &&
-                                      provider.mostMissedWords.isEmpty)
-                                    const Text('No data yet.'),
-
-                                  if (!provider.mostMissedLoading &&
-                                      provider.mostMissedWords.isNotEmpty)
-                                    Column(
-                                      children: provider.mostMissedWords.map((row) {
-                                        return Padding(
-                                          padding: const EdgeInsets.symmetric(
-                                              vertical: 6),
-                                          child: Row(
-                                            mainAxisAlignment:
-                                            MainAxisAlignment.spaceBetween,
-                                            children: [
-                                              Text(row['word']),
-                                              Text(
-                                                '${row['avg_score'].toStringAsFixed(0)}% (${row['attempts']} attempts)',
-                                                style: const TextStyle(
-                                                    color: Colors.redAccent),
-                                              ),
-                                            ],
+                                        const SizedBox(width: 8),
+                                        const Text(
+                                          'Class Performance Summary',
+                                          style: TextStyle(
+                                            fontSize: 18,
+                                            fontWeight: FontWeight.w600,
+                                            color: Color(0xFF2D3748),
                                           ),
-                                        );
-                                      }).toList(),
+                                        ),
+                                      ],
                                     ),
-                                ],
+                                    const SizedBox(height: 16),
+                                    Row(
+                                      mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        _buildStatTile(
+                                          'Avg. Accuracy',
+                                          '${provider.classAverageAccuracy.toStringAsFixed(0)}%',
+                                          Color(AppConfig.primaryColor),
+                                        ),
+                                        _buildStatTile(
+                                          'Top Performer',
+                                          provider.topPerformerName ?? 'No data',
+                                          Color(AppConfig.secondaryColor),
+                                        ),
+                                        _buildStatTile(
+                                          'Needs Help',
+                                          '${provider.needsHelpCount} Students',
+                                          Colors.redAccent,
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
                           ),
-                        ),
 
-                        const SizedBox(height: 20),
+                          const SizedBox(height: 20),
 
-                        // STUDENT LIST
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                          child: Column(
-                            children: provider.students.isEmpty
-                                ? [
-                              const Padding(
-                                padding: EdgeInsets.symmetric(vertical: 24.0),
-                                child: Text(
-                                  'No student data yet.\nStudents will appear once they begin practicing.',
-                                  textAlign: TextAlign.center,
-                                ),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                            child: Card(
+                              elevation: 3,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
                               ),
-                            ]
-                                : provider.students
-                                .map(
-                                  (s) => Padding(
-                                padding: const EdgeInsets.only(bottom: 12.0),
-                                child: InkWell(
-                                  onTap: () {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (_) =>
-                                            StudentAttemptsScreen(
-                                                studentId: s.id,
-                                                studentName: s.name),
+                              child: Padding(
+                                padding: const EdgeInsets.all(20.0),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        const Icon(Icons.warning_amber_rounded,
+                                            color: Colors.orange),
+                                        const SizedBox(width: 8),
+                                        const Text(
+                                          'Most Missed Words',
+                                          style: TextStyle(
+                                            fontSize: 18,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 12),
+
+                                    if (provider.mostMissedLoading)
+                                      const Center(
+                                          child: CircularProgressIndicator()),
+
+                                    if (!provider.mostMissedLoading &&
+                                        provider.mostMissedError != null)
+                                      Text(
+                                        provider.mostMissedError!,
+                                        style:
+                                        const TextStyle(color: Colors.red),
                                       ),
-                                    );
-                                  },
-                                  child: _buildStudentCard(
-                                    name: s.name,
-                                    progress: s.progress,
-                                    accuracy: s.accuracy.toInt(),
-                                    trend: s.trendingUp
-                                        ? Icons.trending_up
-                                        : Icons.trending_down,
-                                    color: s.trendingUp
-                                        ? Color(AppConfig.primaryColor)
-                                        : Colors.orangeAccent,
-                                  ),
+
+                                    if (!provider.mostMissedLoading &&
+                                        provider.mostMissedError == null &&
+                                        provider.mostMissedWords.isEmpty)
+                                      const Text('No data yet.'),
+
+                                    if (!provider.mostMissedLoading &&
+                                        provider.mostMissedError == null &&
+                                        provider.mostMissedWords.isNotEmpty)
+                                      Column(
+                                        children: provider.mostMissedWords
+                                            .map((row) {
+                                          return Padding(
+                                            padding: const EdgeInsets.symmetric(
+                                                vertical: 6),
+                                            child: Row(
+                                              mainAxisAlignment:
+                                              MainAxisAlignment.spaceBetween,
+                                              children: [
+                                                Text(row['word']),
+                                                Text(
+                                                  '${row['avg_score'].toStringAsFixed(0)}% (${row['attempts']} attempts)',
+                                                  style: const TextStyle(
+                                                      color: Colors.redAccent),
+                                                ),
+                                              ],
+                                            ),
+                                          );
+                                        }).toList(),
+                                      ),
+                                  ],
                                 ),
                               ),
-                            )
-                                .toList(),
+                            ),
                           ),
-                        ),
 
-                        const SizedBox(height: 24),
+                          const SizedBox(height: 20),
 
-                        // ACTION BUTTONS
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                          child: Column(
-                            children: [
-                              SizedBox(
-                                width: double.infinity,
-                                height: 54,
-                                child: ElevatedButton.icon(
-                                  onPressed: () {},
-                                  icon: const Icon(Icons.analytics_outlined),
-                                  label: const Text(
-                                    'View Detailed Report',
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w600,
-                                    ),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                            child: Column(
+                              children: provider.students.isEmpty
+                                  ? [
+                                const Padding(
+                                  padding: EdgeInsets.symmetric(
+                                      vertical: 24.0),
+                                  child: Text(
+                                    'No student data yet.\nStudents will appear once they begin practicing.',
+                                    textAlign: TextAlign.center,
                                   ),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor:
-                                    Color(AppConfig.primaryColor),
-                                    foregroundColor: Colors.white,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(12),
+                                ),
+                              ]
+                                  : provider.students
+                                  .map(
+                                    (s) => Padding(
+                                  padding:
+                                  const EdgeInsets.only(bottom: 12.0),
+                                  child: InkWell(
+                                    onTap: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (_) =>
+                                              StudentAttemptsScreen(
+                                                  studentId: s.id,
+                                                  studentName: s.name),
+                                        ),
+                                      );
+                                    },
+                                    child: _buildStudentCard(
+                                      name: s.name,
+                                      progress: s.progress,
+                                      accuracy: s.accuracy.toInt(),
+                                      trend: s.trendingUp
+                                          ? Icons.trending_up
+                                          : Icons.trending_down,
+                                      color: s.trendingUp
+                                          ? Color(AppConfig.primaryColor)
+                                          : Colors.orangeAccent,
                                     ),
                                   ),
                                 ),
-                              ),
-                              const SizedBox(height: 12),
-                              SizedBox(
-                                width: double.infinity,
-                                height: 54,
-                                child: OutlinedButton.icon(
-                                  onPressed: () {},
-                                  icon: const Icon(Icons.group),
-                                  label: const Text(
-                                    'Manage Students',
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                  style: OutlinedButton.styleFrom(
-                                    foregroundColor:
-                                    Color(AppConfig.secondaryColor),
-                                    side: BorderSide(
-                                      color: Color(AppConfig.secondaryColor),
-                                    ),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
+                              )
+                                  .toList(),
+                            ),
                           ),
-                        ),
 
-                        const SizedBox(height: 32),
-                      ],
+                          const SizedBox(height: 24),
+
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                            child: Column(
+                              children: [
+                                SizedBox(
+                                  width: double.infinity,
+                                  height: 54,
+                                  child: ElevatedButton.icon(
+                                    onPressed: () {},
+                                    icon: const Icon(Icons.analytics_outlined),
+                                    label: const Text(
+                                      'View Detailed Report',
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor:
+                                      Color(AppConfig.primaryColor),
+                                      foregroundColor: Colors.white,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 12),
+                                SizedBox(
+                                  width: double.infinity,
+                                  height: 54,
+                                  child: OutlinedButton.icon(
+                                    onPressed: () {},
+                                    icon: const Icon(Icons.group),
+                                    label: const Text(
+                                      'Manage Students',
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                    style: OutlinedButton.styleFrom(
+                                      foregroundColor:
+                                      Color(AppConfig.secondaryColor),
+                                      side: BorderSide(
+                                        color: Color(AppConfig.secondaryColor),
+                                      ),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+
+                          const SizedBox(height: 32),
+                        ]
+                    ],
                   ],
                 ),
               ),
@@ -354,6 +367,56 @@ class _TeacherDashboardView extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+
+  Widget _CreateClassCard({required TeacherProvider provider}) {
+    final controller = TextEditingController();
+
+    return Padding(
+      padding: const EdgeInsets.all(24),
+      child: Card(
+        elevation: 3,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            children: [
+              const Text(
+                "Create a class (e.g. {Your name}'s {Your grade} Class)",
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 20),
+              TextField(
+                controller: controller,
+                decoration: const InputDecoration(
+                  labelText: 'Class Name',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: () {
+                  final name = controller.text.trim();
+                  if (name.isNotEmpty) {
+                    provider.createClass(name);
+                  }
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Color(AppConfig.primaryColor),
+                  foregroundColor: Colors.white,
+                ),
+                child: const Text('Create Class'),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 

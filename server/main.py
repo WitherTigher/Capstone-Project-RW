@@ -35,6 +35,11 @@ def assess_pronunciation():
         audio_path = tmp.name
         audio_file.save(audio_path)
 
+    # Reject tiny/invalid audio files before Azure processes them
+    if os.path.getsize(audio_path) < 2000:
+        print("Audio too small:", os.path.getsize(audio_path))
+        return jsonify({"error": "Audio too short or invalid"}), 400
+
     try:
         # Set up Azure speech config
         speech_config = speechsdk.SpeechConfig(
@@ -58,7 +63,12 @@ def assess_pronunciation():
 
         pronunciation_config.apply_to(recognizer)
 
-        result = recognizer.recognize_once()
+        try:
+            result = recognizer.recognize_once()
+        except Exception as e:
+            print("=== AZURE EXCEPTION ===")
+            print(e)
+            return jsonify({"error": str(e)}), 500
 
         if result.reason != speechsdk.ResultReason.RecognizedSpeech:
             return jsonify({"error": "Could not analyze speech"}), 500

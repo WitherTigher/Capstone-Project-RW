@@ -173,6 +173,14 @@ class _TeacherStudentsPage extends State<TeacherStudentsPage> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
+                  Text(
+                    'Get a detailed view of your students data',
+                    style: TextStyle(
+                      fontSize: 30,
+                      color: Colors.black,
+                    ),
+                  ),
+                  SizedBox(height: 30),
                   DropdownButton<String>(
                     value: setrange,
                     hint: const Text('What date range do you want?'),
@@ -189,6 +197,7 @@ class _TeacherStudentsPage extends State<TeacherStudentsPage> {
                       }
                     },
                   ),
+                  SizedBox(height: 10),
                   ElevatedButton.icon(
                     onPressed: () => _exportFilteredCSV(provider),
                     icon: const Icon(Icons.analytics_outlined),

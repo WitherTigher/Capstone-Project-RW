@@ -21,6 +21,39 @@ class _SignUpPageState extends State<SignUpPage> {
   bool _isLoading = false;
   String? _message;
 
+  // Classes
+  List<Map<String, dynamic>> _classes = [];
+  String? _selectedClassId;
+  bool _loadingClasses = true;
+  String? _classError;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadClasses();
+  }
+
+  Future<void> _loadClasses() async {
+    try {
+      final supabase = Supabase.instance.client;
+
+      final res = await supabase
+          .from('classes')
+          .select('id, name')
+          .order('name');
+
+      setState(() {
+        _classes = List<Map<String, dynamic>>.from(res);
+        _loadingClasses = false;
+      });
+    } catch (e) {
+      setState(() {
+        _classError = "Failed to load classes";
+        _loadingClasses = false;
+      });
+    }
+  }
+
   Future<void> _signUp() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -44,6 +77,7 @@ class _SignUpPageState extends State<SignUpPage> {
           'first_name': firstName,
           'last_name': lastName,
           'role': _selectedRole,
+          'class_id': _selectedRole == 'student' ? _selectedClassId : null,
         },
       );
 
@@ -60,6 +94,7 @@ class _SignUpPageState extends State<SignUpPage> {
         'last_name': lastName,
         'role': _selectedRole,
         'locale': 'en-US',
+        'class_id': _selectedRole == 'student' ? _selectedClassId : null,
       });
 
       setState(() => _message = 'Account created successfully.');
@@ -95,6 +130,8 @@ class _SignUpPageState extends State<SignUpPage> {
                   ),
                 ),
                 const SizedBox(height: 30),
+
+                // First Name
                 TextFormField(
                   controller: _firstNameController,
                   decoration: const InputDecoration(
@@ -105,6 +142,8 @@ class _SignUpPageState extends State<SignUpPage> {
                   val == null || val.isEmpty ? 'Required' : null,
                 ),
                 const SizedBox(height: 20),
+
+                // Last Name
                 TextFormField(
                   controller: _lastNameController,
                   decoration: const InputDecoration(
@@ -115,6 +154,8 @@ class _SignUpPageState extends State<SignUpPage> {
                   val == null || val.isEmpty ? 'Required' : null,
                 ),
                 const SizedBox(height: 20),
+
+                // Email
                 TextFormField(
                   controller: _emailController,
                   decoration: const InputDecoration(
@@ -128,6 +169,8 @@ class _SignUpPageState extends State<SignUpPage> {
                   },
                 ),
                 const SizedBox(height: 20),
+
+                // Password
                 TextFormField(
                   controller: _passwordController,
                   obscureText: true,
@@ -139,20 +182,52 @@ class _SignUpPageState extends State<SignUpPage> {
                   val == null || val.length < 6 ? 'Min 6 characters' : null,
                 ),
                 const SizedBox(height: 20),
+
+                // Role dropdown
                 DropdownButtonFormField<String>(
-                  initialValue: _selectedRole,
+                  value: _selectedRole,
                   items: const [
                     DropdownMenuItem(value: 'student', child: Text('Student')),
                     DropdownMenuItem(value: 'teacher', child: Text('Teacher')),
                   ],
-                  onChanged: (val) =>
-                      setState(() => _selectedRole = val ?? 'student'),
+                  onChanged: (val) {
+                    setState(() => _selectedRole = val ?? 'student');
+                  },
                   decoration: const InputDecoration(
                     labelText: 'Role',
                     border: OutlineInputBorder(),
                   ),
                 ),
+
+                const SizedBox(height: 20),
+
+                // Class dropdown — ONLY for students
+                if (_selectedRole == 'student')
+                  _loadingClasses
+                      ? const CircularProgressIndicator()
+                      : DropdownButtonFormField<String>(
+                    value: _selectedClassId,
+                    items: _classes
+                        .map<DropdownMenuItem<String>>(
+                          (c) => DropdownMenuItem<String>(
+                        value: c['id'] as String,
+                        child: Text(c['name'] as String),
+                      ),
+                    )
+                        .toList(),
+                    onChanged: (val) {
+                      setState(() => _selectedClassId = val);
+                    },
+                    decoration: const InputDecoration(
+                      labelText: 'Select Class',
+                      border: OutlineInputBorder(),
+                    ),
+                    validator: (val) =>
+                    val == null ? 'Please select a class' : null,
+                  ),
+
                 const SizedBox(height: 30),
+
                 if (_message != null)
                   Padding(
                     padding: const EdgeInsets.only(bottom: 10),
@@ -166,6 +241,8 @@ class _SignUpPageState extends State<SignUpPage> {
                       ),
                     ),
                   ),
+
+                // Sign Up Button
                 SizedBox(
                   width: double.infinity,
                   height: 50,
@@ -187,7 +264,9 @@ class _SignUpPageState extends State<SignUpPage> {
                         : const Text('Sign Up'),
                   ),
                 ),
+
                 const SizedBox(height: 16),
+
                 TextButton(
                   onPressed: () =>
                       Navigator.pushReplacementNamed(context, '/login'),

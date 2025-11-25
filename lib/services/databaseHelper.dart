@@ -124,6 +124,8 @@ class DatabaseHelper {
         .from('attempts')
         .select('*, words(text)')
         .eq('user_id', userId)
+        // filter out zero scores
+        .gt('score', 0)
         .order('timestamp', ascending: false);
     return List<Map<String, dynamic>>.from(res);
   }
@@ -135,7 +137,13 @@ class DatabaseHelper {
     );
 
     if (result is List && result.isNotEmpty) {
-      return Map<String, dynamic>.from(result.first);
+      final raw = Map<String, dynamic>.from(result.first);
+
+      return {
+        'totalAttempts': raw['totalattempts'] ?? 0,
+        'avgScore': raw['avgscore'] != null ? double.parse(raw['avgscore'].toString()) : 0.0,
+        'lastAttempt': raw['lastattempt'],
+      };
     }
 
     if (result is Map<String, dynamic>) {
@@ -181,7 +189,8 @@ class DatabaseHelper {
     final res = await client
         .from('attempts')
         .select('score')
-        .filter('user_id', 'in', studentIds);
+        .filter('user_id', 'in', studentIds)
+        .gt('score', 0);
 
     if (res.isEmpty) return 0.0;
 
@@ -197,7 +206,8 @@ class DatabaseHelper {
     final res = await client
         .from('attempts')
         .select('user_id, score')
-        .filter('user_id', 'in', studentIds);
+        .filter('user_id', 'in', studentIds)
+        .gt('score', 0);
 
     final Map<String, List<double>> grouped = {};
 
@@ -311,6 +321,57 @@ class DatabaseHelper {
     );
 
     return results.take(limit).toList();
+  }
+
+  Future<List<Map<String, dynamic>>> fetchMostMissedWordsForStudents(
+      List<String> studentIds, {
+        int limit = 10,
+      }) async {
+    if (studentIds.isEmpty) return [];
+
+    final idList = studentIds.map((id) => '"$id"').join(',');
+
+    final res = await Supabase.instance.client
+        .from('attempts')
+        .select('score, word_id, words(text)')
+        .filter('user_id', 'in', '($idList)')
+        .order('score', ascending: true);
+
+    if (res == null || res.isEmpty) return [];
+
+    final Map<String, List<num>> scoresByWord = {};
+
+    for (final row in res) {
+      final text = row['words']?['text'];
+      if (text == null) continue;
+
+      final score = (row['score'] ?? 0).toDouble();
+
+      scoresByWord.putIfAbsent(text, () => []);
+      scoresByWord[text]!.add(score);
+    }
+
+    // Convert to list of maps
+    final List<Map<String, dynamic>> result = scoresByWord.entries.map((e) {
+      final allScores = e.value;
+      final avg = allScores.reduce((a, b) => a + b) / allScores.length;
+
+      return {
+        'word': e.key,
+        'avg_score': avg,
+        'attempts': allScores.length,
+      };
+    }).toList();
+
+    // Only show words where avg score < 80%
+    final filtered = result.where((w) => w['avg_score'] < 80).toList();
+
+    if (filtered.isEmpty) return [];
+
+    // Sort by lowest accuracy first (worst → best)
+    filtered.sort((a, b) => a['avg_score'].compareTo(b['avg_score']));
+
+    return filtered.take(limit).toList();
   }
 
   // ---------------------------------------------------------------------------

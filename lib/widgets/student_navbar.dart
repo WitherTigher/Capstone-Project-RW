@@ -30,10 +30,6 @@ class StudentNavBar extends StatelessWidget {
         icon: Icon(Icons.insights),
         label: 'Progress',
       ),
-      BottomNavigationBarItem(
-        icon: Icon(Icons.feedback),
-        label: 'Feedback',
-      ),
     ];
 
     final safeIndex = (currentIndex >= 0 && currentIndex < items.length)

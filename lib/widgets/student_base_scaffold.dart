@@ -79,9 +79,6 @@ class StudentBaseScaffold extends StatelessWidget {
             case 3:
               Navigator.pushReplacementNamed(context, '/progress');
               break;
-            case 4:
-              Navigator.pushReplacementNamed(context, '/feedback');
-              break;
           }
         },
       ),

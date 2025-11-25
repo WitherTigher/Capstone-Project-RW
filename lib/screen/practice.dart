@@ -149,28 +149,6 @@ class _PracticePageState extends State<PracticePage> {
   }
 
   // ----------------------------------------------------------------------------
-  // INSERT ATTEMPT
-  // ----------------------------------------------------------------------------
-  Future<void> _storeAttempt({
-    required String userId,
-    required String wordId,
-    required double score,
-    String? feedback,
-    required String recordingUrl,
-  }) async {
-    await Supabase.instance.client.from('attempts').insert({
-      'user_id': userId,
-      'word_id': wordId,
-      'score': score,
-      'feedback': feedback ?? '',
-      'timestamp': DateTime.now().toIso8601String(),
-      'recording_url': recordingUrl,
-    });
-
-    debugPrint('[Practice] Attempt stored for $wordId (score=$score)');
-  }
-
-  // ----------------------------------------------------------------------------
   // INSERT MASTERED WORD
   // ----------------------------------------------------------------------------
   Future<void> _storeMasteredWord({
@@ -282,8 +260,10 @@ class _PracticePageState extends State<PracticePage> {
       amp,
     ) async {
       if (!_micIsReady && amp.current != null) {
+        _micIsReady = true;
+        debugPrint("MIC READY — first non-null amplitude detected @ ${DateTime.now()}");
+
         setState(() {
-          _micIsReady = true;
           _showCountdown = true;
           _countdown = 3;
         });

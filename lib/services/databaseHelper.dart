@@ -189,7 +189,8 @@ class DatabaseHelper {
     final res = await client
         .from('attempts')
         .select('score')
-        .filter('user_id', 'in', studentIds);
+        .filter('user_id', 'in', studentIds)
+        .gt('score', 0);
 
     if (res.isEmpty) return 0.0;
 
@@ -205,7 +206,8 @@ class DatabaseHelper {
     final res = await client
         .from('attempts')
         .select('user_id, score')
-        .filter('user_id', 'in', studentIds);
+        .filter('user_id', 'in', studentIds)
+        .gt('score', 0);
 
     final Map<String, List<double>> grouped = {};
 

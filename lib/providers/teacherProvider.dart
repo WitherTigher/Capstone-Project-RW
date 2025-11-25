@@ -68,6 +68,8 @@ class TeacherProvider extends ChangeNotifier {
   bool mostMissedLoading = true;
   String? mostMissedError;
 
+  bool needsClassCreated = false;
+
   TeacherProvider() {
     loadDashboard();
     loadWordLists();
@@ -118,7 +120,7 @@ class TeacherProvider extends ChangeNotifier {
           .maybeSingle();
 
       if (classRow == null || classRow['id'] == null) {
-        dashboardError = "No class assigned to teacher.";
+        needsClassCreated = true;
         dashboardLoading = false;
         notifyListeners();
         return;
@@ -199,6 +201,30 @@ class TeacherProvider extends ChangeNotifier {
     } catch (e) {
       dashboardError = "Failed to load dashboard: $e";
       dashboardLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> createClass(String name) async {
+    try {
+      final teacher = supabase.auth.currentUser;
+      if (teacher == null) return;
+
+      final res = await supabase
+          .from('classes')
+          .insert({
+        'name': name,
+        'teacher_id': teacher.id,
+      })
+          .select()
+          .maybeSingle();
+
+      if (res != null) {
+        needsClassCreated = false;
+        await loadDashboard();
+      }
+    } catch (e) {
+      dashboardError = "Failed to create class: $e";
       notifyListeners();
     }
   }

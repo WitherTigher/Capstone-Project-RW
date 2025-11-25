@@ -159,6 +159,84 @@ class _TeacherDashboardView extends StatelessWidget {
 
                         const SizedBox(height: 20),
 
+                        // --------------------------------------------------
+                        // MOST MISSED WORDS
+                        // --------------------------------------------------
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                          child: Card(
+                            elevation: 3,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: Padding(
+                              padding: const EdgeInsets.all(20.0),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      const Icon(Icons.warning_amber_rounded,
+                                          color: Colors.orange),
+                                      const SizedBox(width: 8),
+                                      const Text(
+                                        'Most Missed Words',
+                                        style: TextStyle(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 12),
+
+                                  if (provider.mostMissedLoading)
+                                    const Center(
+                                        child: CircularProgressIndicator()),
+
+                                  if (!provider.mostMissedLoading &&
+                                      provider.mostMissedError != null)
+                                    Text(
+                                      provider.mostMissedError!,
+                                      style:
+                                      const TextStyle(color: Colors.red),
+                                    ),
+
+                                  if (!provider.mostMissedLoading &&
+                                      provider.mostMissedError == null &&
+                                      provider.mostMissedWords.isEmpty)
+                                    const Text('No data yet.'),
+
+                                  if (!provider.mostMissedLoading &&
+                                      provider.mostMissedWords.isNotEmpty)
+                                    Column(
+                                      children: provider.mostMissedWords.map((row) {
+                                        return Padding(
+                                          padding: const EdgeInsets.symmetric(
+                                              vertical: 6),
+                                          child: Row(
+                                            mainAxisAlignment:
+                                            MainAxisAlignment.spaceBetween,
+                                            children: [
+                                              Text(row['word']),
+                                              Text(
+                                                '${row['avg_score'].toStringAsFixed(0)}% (${row['attempts']} attempts)',
+                                                style: const TextStyle(
+                                                    color: Colors.redAccent),
+                                              ),
+                                            ],
+                                          ),
+                                        );
+                                      }).toList(),
+                                    ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+
+                        const SizedBox(height: 20),
+
                         // STUDENT LIST
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 16.0),
@@ -182,7 +260,10 @@ class _TeacherDashboardView extends StatelessWidget {
                                     Navigator.push(
                                       context,
                                       MaterialPageRoute(
-                                        builder: (_) => StudentAttemptsScreen(studentId: s.id, studentName: s.name),
+                                        builder: (_) =>
+                                            StudentAttemptsScreen(
+                                                studentId: s.id,
+                                                studentName: s.name),
                                       ),
                                     );
                                   },
@@ -196,8 +277,8 @@ class _TeacherDashboardView extends StatelessWidget {
                                     color: s.trendingUp
                                         ? Color(AppConfig.primaryColor)
                                         : Colors.orangeAccent,
-                                  )
-                                )
+                                  ),
+                                ),
                               ),
                             )
                                 .toList(),
@@ -215,9 +296,7 @@ class _TeacherDashboardView extends StatelessWidget {
                                 width: double.infinity,
                                 height: 54,
                                 child: ElevatedButton.icon(
-                                  onPressed: () {
-                                    // TODO: Add class report navigation
-                                  },
+                                  onPressed: () {},
                                   icon: const Icon(Icons.analytics_outlined),
                                   label: const Text(
                                     'View Detailed Report',
@@ -241,9 +320,7 @@ class _TeacherDashboardView extends StatelessWidget {
                                 width: double.infinity,
                                 height: 54,
                                 child: OutlinedButton.icon(
-                                  onPressed: () {
-                                    // TODO: Add manage students navigation
-                                  },
+                                  onPressed: () {},
                                   icon: const Icon(Icons.group),
                                   label: const Text(
                                     'Manage Students',
@@ -279,8 +356,6 @@ class _TeacherDashboardView extends StatelessWidget {
       },
     );
   }
-
-  // _build SMALL WIDGETS
 
   Widget _buildStatTile(String label, String value, Color color) {
     return Column(
@@ -322,7 +397,6 @@ class _TeacherDashboardView extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header row
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -343,7 +417,6 @@ class _TeacherDashboardView extends StatelessWidget {
 
             const SizedBox(height: 12),
 
-            // Progress bar
             ClipRRect(
               borderRadius: BorderRadius.circular(10),
               child: LinearProgressIndicator(

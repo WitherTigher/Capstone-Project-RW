@@ -5,9 +5,7 @@ import 'package:readright/services/databaseHelper.dart';
 class StudentDashboardItem {
   final String id;
   final String name;
-  // 0.0–1.0
   final double progress;
-  // 0–100
   final double accuracy;
   final bool trendingUp;
 
@@ -63,9 +61,37 @@ class TeacherProvider extends ChangeNotifier {
   String? listsError;
   List<WordListItem> wordLists = [];
 
+  // ----------------------------------------------------------
+  // MOST MISSED WORDS
+  // ----------------------------------------------------------
+  List<Map<String, dynamic>> mostMissedWords = [];
+  bool mostMissedLoading = true;
+  String? mostMissedError;
+
   TeacherProvider() {
     loadDashboard();
     loadWordLists();
+    loadMostMissedWords();
+  }
+
+  // ----------------------------------------------------------
+  // LOAD MOST MISSED WORDS
+  // ----------------------------------------------------------
+  Future<void> loadMostMissedWords() async {
+    try {
+      mostMissedLoading = true;
+      mostMissedError = null;
+      notifyListeners();
+
+      mostMissedWords = await _db.fetchMostMissedWords(limit: 10);
+
+      mostMissedLoading = false;
+      notifyListeners();
+    } catch (e) {
+      mostMissedError = "Failed to load most missed words: $e";
+      mostMissedLoading = false;
+      notifyListeners();
+    }
   }
 
   // --------------------------------------------------------------------------
@@ -85,7 +111,6 @@ class TeacherProvider extends ChangeNotifier {
         return;
       }
 
-      // STEP 1: Get the teacher's class
       final classRow = await supabase
           .from('classes')
           .select('id')
@@ -101,7 +126,6 @@ class TeacherProvider extends ChangeNotifier {
 
       final classId = classRow['id'];
 
-      // STEP 2: Fetch students in this class
       final studentRows = await supabase
           .from('users')
           .select('id, first_name, last_name, email')
@@ -122,16 +146,11 @@ class TeacherProvider extends ChangeNotifier {
 
       final studentIds = studentRows.map<String>((s) => s['id'] as String).toList();
 
-      // STEP 3: Fetch accuracy just for these students
       final accuracyMap = await _db.fetchAccuraciesForStudents(studentIds);
       classAverageAccuracy = await _db.fetchAverageAccuracyForStudents(studentIds);
 
-      // STEP 4: Needs help (<70%)
-      needsHelpCount = accuracyMap.values
-          .where((a) => a < 70)
-          .length;
+      needsHelpCount = accuracyMap.values.where((a) => a < 70).length;
 
-      // STEP 5: Build StudentDashboardItems
       List<StudentDashboardItem> items = [];
       String? topName;
       double bestAccuracy = -1;

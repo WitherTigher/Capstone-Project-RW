@@ -387,9 +387,10 @@ class _PracticePageState extends State<PracticePage> {
         );
       } else if (response.statusCode == 200) {
         continues = false;
+
         final body = await response.stream.bytesToString();
         final decoded = jsonDecode(body);
-        print('deocoded' + body);
+        print('decoded ' + body);
         _assessmentResult = AssessmentResult.fromJson(decoded);
 
         final wordId = _currentWord!.id;
@@ -402,7 +403,7 @@ class _PracticePageState extends State<PracticePage> {
 
         String? url;
 
-        if (shouldSave) {
+        if (shouldSave == true) {
           try {
             final fileName =
                 'recordings/${user.id}/${DateTime.now().millisecondsSinceEpoch}.wav';
@@ -416,24 +417,33 @@ class _PracticePageState extends State<PracticePage> {
                 .getPublicUrl(fileName);
           } catch (e) {
             debugPrint("Audio upload failed: $e");
+            url = null;
           }
+        } else {
+          // force url to be null to prevents any stored audio
+          url = null;
         }
 
-        // --------------------------------------------------
-        // INSERT ATTEMPT
-        // --------------------------------------------------
-        await Supabase.instance.client.from('attempts').insert({
+        // ------------------------------------------------------------------
+        // INSERT ATTEMPT (only includes recording_url if retention enabled)
+        // ------------------------------------------------------------------
+        final Map<String, dynamic> attemptRow = {
           'user_id': user.id,
           'word_id': wordId,
           'score': score,
           'feedback': "Good job",
-          if (url != null) 'recording_url': url,
           'timestamp': DateTime.now().toIso8601String(),
-        });
+        };
 
-        // --------------------------------------------------
-        // MARK WORD MASTERED IF HIGH ENOUGH
-        // --------------------------------------------------
+        if (url != null) {
+          attemptRow['recording_url'] = url;
+        }
+
+        await Supabase.instance.client.from('attempts').insert(attemptRow);
+
+        // ------------------------------------------------------------------
+        // MASTERED WORD CHECK
+        // ------------------------------------------------------------------
         if (score >= 90) {
           final already = await _isWordAlreadyMastered(user.id, wordId);
 

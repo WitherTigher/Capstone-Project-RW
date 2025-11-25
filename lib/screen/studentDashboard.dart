@@ -65,8 +65,8 @@ class _StudentDashboardState extends State<StudentDashboard> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          // Header
-          Row(
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Text(
                 'Welcome, $firstName!',
@@ -74,32 +74,27 @@ class _StudentDashboardState extends State<StudentDashboard> {
                   fontSize: 26,
                   fontWeight: FontWeight.bold,
                 ),
+                textAlign: TextAlign.center,
               ),
-              const Spacer(),
+              const SizedBox(height: 8),
               Text(
                 'Your class: ${user?['class_name'] ?? 'N/A'}',
                 style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w600,
                 ),
+                textAlign: TextAlign.center,
               ),
             ],
-          ),
-          const SizedBox(height: 20),
-          Text(
-            'Current List: $title',
-            style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-            ),
           ),
 
           const SizedBox(height: 40),
 
           // Progress Header
-          const Text(
-            'Current Progress',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+          Text(
+            'Progress in current list: $title',
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+            textAlign: TextAlign.center,
           ),
           const SizedBox(height: 20),
 
@@ -116,6 +111,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
           Text(
             '${(progress * 100).toStringAsFixed(1)}% • ${dashboard.masteredWords} / ${dashboard.totalWords} words mastered',
             style: const TextStyle(fontSize: 16),
+            textAlign: TextAlign.center,
           ),
 
           const Spacer(),

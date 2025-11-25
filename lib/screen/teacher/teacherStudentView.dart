@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:flutter_sound/flutter_sound.dart';
+import 'package:media_kit/media_kit.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 class StudentAttemptsScreen extends StatefulWidget {
@@ -24,7 +24,7 @@ class _StudentAttemptsScreenState extends State<StudentAttemptsScreen> {
   String? errorMessage;
   List<dynamic> attempts = [];
 
-  FlutterSoundPlayer? player;
+  Player? player;
   bool isPlaying = false;
   String? currentUrl;
 
@@ -36,15 +36,18 @@ class _StudentAttemptsScreenState extends State<StudentAttemptsScreen> {
   }
 
   Future<void> initPlayer() async {
-    player = FlutterSoundPlayer();
-    await player!.openPlayer();
+    player = Player();
+
+    player!.stream.completed.listen((_) {
+      if (mounted) setState(() => isPlaying = false);
+    });
+
     await Permission.microphone.request();
   }
 
   @override
   void dispose() {
-    player?.stopPlayer();
-    player?.closePlayer();
+    player?.dispose();
     super.dispose();
   }
 
@@ -70,12 +73,10 @@ class _StudentAttemptsScreenState extends State<StudentAttemptsScreen> {
 
   Future<void> playRecording(String? url) async {
     if (url == null || url.isEmpty) return;
-
     if (player == null) return;
 
-    // Stop if playing same file
     if (isPlaying && currentUrl == url) {
-      await player!.stopPlayer();
+      await player!.stop();
       setState(() => isPlaying = false);
       return;
     }
@@ -86,12 +87,8 @@ class _StudentAttemptsScreenState extends State<StudentAttemptsScreen> {
         isPlaying = true;
       });
 
-      await player!.startPlayer(
-        fromURI: url,
-        whenFinished: () {
-          if (mounted) setState(() => isPlaying = false);
-        },
-      );
+      await player!.open(Media(url));
+      await player!.play();
     } catch (e) {
       debugPrint("Playback error: $e");
       setState(() => isPlaying = false);
@@ -123,7 +120,6 @@ class _StudentAttemptsScreenState extends State<StudentAttemptsScreen> {
       return const Center(child: Text("No attempts yet"));
     }
 
-    // Group attempts by word_text
     final Map<String, List<dynamic>> grouped = {};
     for (var a in attempts) {
       final key = a["word_text"] ?? "Unknown Word";
@@ -147,17 +143,21 @@ class _StudentAttemptsScreenState extends State<StudentAttemptsScreen> {
 
         return Card(
           margin: const EdgeInsets.only(bottom: 16),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape:
+          RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           elevation: 3,
           child: Theme(
-            data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+            data: Theme.of(context)
+                .copyWith(dividerColor: Colors.transparent),
             child: ExpansionTile(
-              tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              tilePadding:
+              const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               childrenPadding:
               const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              collapsedShape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16)),
+              collapsedShape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16)),
               title: Text(
                 word,
                 style: const TextStyle(

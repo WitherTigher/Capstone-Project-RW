@@ -165,7 +165,7 @@ This view gives you a full diagnostic history for each student.
 The student is removed from:
 
 - Your class roster.
-- Their ability to log in (depending on how your deployment is configured).
+- Their ability to log in.
 
 ### Refreshing Your Dashboard
 

@@ -14,16 +14,13 @@ import 'dart:convert';
 import 'package:record/record.dart';
 import '../models/assessment_result.dart';
 import 'package:confetti/confetti.dart';
+import 'package:flutter_tts/flutter_tts.dart';
 
 class PracticePage extends StatefulWidget {
   final bool testMode;
   final bool skipLoad;
 
-  const PracticePage({
-    super.key,
-    this.testMode = false,
-    this.skipLoad = false,
-  });
+  const PracticePage({super.key, this.testMode = false, this.skipLoad = false});
 
   @override
   State<PracticePage> createState() => _PracticePageState();
@@ -31,7 +28,7 @@ class PracticePage extends StatefulWidget {
 
 class _PracticePageState extends State<PracticePage> {
   final record = AudioRecorder();
-
+  final FlutterTts textspeech = FlutterTts();
   bool _isRecording = false;
   bool _micIsReady = false;
   bool _loading = true;
@@ -39,6 +36,7 @@ class _PracticePageState extends State<PracticePage> {
   String? _error;
 
   int _countdown = 0;
+  int sentloop = 0;
   bool _showCountdown = false;
 
   Word? _currentWord;
@@ -49,7 +47,9 @@ class _PracticePageState extends State<PracticePage> {
   @override
   void initState() {
     super.initState();
-    _confettiController = ConfettiController(duration: const Duration(seconds: 2));
+    _confettiController = ConfettiController(
+      duration: const Duration(seconds: 2),
+    );
 
     if (!widget.testMode) {
       _initRecording();
@@ -92,7 +92,9 @@ class _PracticePageState extends State<PracticePage> {
   }
 
   Future<Map<String, dynamic>?> _fetchUnmasteredWord(
-      String userId, String listId) async {
+    String userId,
+    String listId,
+  ) async {
     final mastered = await _masteredWordIdList(userId);
 
     List<dynamic> rows;
@@ -147,6 +149,28 @@ class _PracticePageState extends State<PracticePage> {
         'mastered_at': DateTime.now().toIso8601String(),
       });
     } catch (_) {}
+  }
+
+  // ---------------- NEW: CHECK LIST COMPLETION ----------------
+  Future<void> wordSpeech() async {
+    if (_currentWord == null) return;
+    await textspeech.setLanguage('en-US');
+    await textspeech.setPitch(1.3);
+    await textspeech.setSpeechRate(.8);
+    await textspeech.speak(_currentWord!.text);
+  }
+
+  Future<void> sentSpeech() async {
+    if (_currentWord == null || _currentWord!.sentences.isEmpty) return;
+    if (sentloop >= _currentWord!.sentences.length) {
+      sentloop = 0;
+    }
+
+    await textspeech.setLanguage('en-US');
+    await textspeech.setPitch(1.3);
+    await textspeech.setSpeechRate(.8);
+    await textspeech.speak(_currentWord!.sentences[sentloop]);
+    sentloop++;
   }
 
   // ---------------- NEW: CHECK LIST COMPLETION ----------------
@@ -206,7 +230,7 @@ class _PracticePageState extends State<PracticePage> {
                 await _advanceToNextList();
               },
               child: const Text("Continue"),
-            )
+            ),
           ],
         );
       },
@@ -232,14 +256,15 @@ class _PracticePageState extends State<PracticePage> {
     // Stop if already at last list
     if (next > 5) {
       ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("All Dolch lists completed!"))
+        const SnackBar(content: Text("All Dolch lists completed!")),
       );
       return;
     }
 
-    await Supabase.instance.client.from('users').update({
-      'current_list_int': next
-    }).eq('id', user.id);
+    await Supabase.instance.client
+        .from('users')
+        .update({'current_list_int': next})
+        .eq('id', user.id);
 
     // Reset mastered words when moving to a new list
     await Supabase.instance.client
@@ -308,8 +333,9 @@ class _PracticePageState extends State<PracticePage> {
 
   Future<void> _toggleRecording() async {
     if (!_hasPermission) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text("Mic permission denied")));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Mic permission denied")));
       return;
     }
 
@@ -340,7 +366,9 @@ class _PracticePageState extends State<PracticePage> {
     _isRecording = true;
     setState(() {});
 
-    record.onAmplitudeChanged(const Duration(milliseconds: 100)).listen((amp) async {
+    record.onAmplitudeChanged(const Duration(milliseconds: 100)).listen((
+      amp,
+    ) async {
       if (!_micIsReady && amp.current != null) {
         _micIsReady = true;
 
@@ -409,7 +437,9 @@ class _PracticePageState extends State<PracticePage> {
 
       final uri = Uri.parse("${_getServerBaseUrl()}/assess");
       final request = http.MultipartRequest("POST", uri)
-        ..files.add(await http.MultipartFile.fromPath("audio_file", wavFile.path))
+        ..files.add(
+          await http.MultipartFile.fromPath("audio_file", wavFile.path),
+        )
         ..fields["reference_text"] = _currentWord!.text;
 
       final response = await request.send();
@@ -418,13 +448,15 @@ class _PracticePageState extends State<PracticePage> {
 
       if (response.statusCode != 200 && goThrough == 3) {
         ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("Network Error retries failed.")));
+          const SnackBar(content: Text("Network Error retries failed.")),
+        );
         _assessmentResult = null;
         setState(() {});
         return;
       } else if (response.statusCode != 200) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(const SnackBar(content: Text("Retrying...")));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text("Retrying...")));
       } else if (response.statusCode == 200) {
         continues = false;
 
@@ -501,73 +533,98 @@ class _PracticePageState extends State<PracticePage> {
       padding: const EdgeInsets.all(24),
       child: _hasPermission
           ? Column(
-        mainAxisAlignment:
-        hasAssessment ? MainAxisAlignment.start : MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Icon(
-            _isRecording ? Icons.mic : Icons.mic_none,
-            size: 80,
-            color: _isRecording
-                ? Color(AppConfig.primaryColor)
-                : Colors.grey.shade700,
-          ),
+              mainAxisAlignment: hasAssessment
+                  ? MainAxisAlignment.start
+                  : MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Icon(
+                  _isRecording ? Icons.mic : Icons.mic_none,
+                  size: 80,
+                  color: _isRecording
+                      ? Color(AppConfig.primaryColor)
+                      : Colors.grey.shade700,
+                ),
 
-          if (_isRecording && !_micIsReady)
-            const Text(
-              "Preparing microphone...",
-              style: TextStyle(fontSize: 18, color: Colors.orange),
-            ),
+                if (_isRecording && !_micIsReady)
+                  const Text(
+                    "Preparing microphone...",
+                    style: TextStyle(fontSize: 18, color: Colors.orange),
+                  ),
 
-          if (_isRecording && _showCountdown)
-            Text(
-              "Starting in $_countdown...",
-              style: const TextStyle(
-                fontSize: 28,
-                fontWeight: FontWeight.bold,
-                color: Colors.red,
-              ),
-            ),
+                if (_isRecording && _showCountdown)
+                  Text(
+                    "Starting in $_countdown...",
+                    style: const TextStyle(
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.red,
+                    ),
+                  ),
 
-          if (_isRecording && _micIsReady && !_showCountdown)
-            const Text(
-              "Speak now!",
-              style: TextStyle(fontSize: 20, color: Colors.green),
-            ),
+                if (_isRecording && _micIsReady && !_showCountdown)
+                  const Text(
+                    "Speak now!",
+                    style: TextStyle(fontSize: 20, color: Colors.green),
+                  ),
 
-          const SizedBox(height: 16),
+                const SizedBox(height: 16),
 
-          Text(
-            _currentWord?.text ?? '',
-            style: const TextStyle(
-              fontSize: 42,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF2D3748),
-            ),
-          ),
+                Text(
+                  _currentWord?.text ?? '',
+                  style: const TextStyle(
+                    fontSize: 42,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF2D3748),
+                  ),
+                ),
 
-          const SizedBox(height: 30),
+                const SizedBox(height: 30),
 
-          if (!hasAssessment)
-            ElevatedButton.icon(
-              onPressed: _toggleRecording,
-              icon: Icon(_isRecording ? Icons.stop : Icons.mic_rounded),
-              label: Text(_isRecording ? 'Stop Recording' : 'Start Recording'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Color(AppConfig.primaryColor),
-                foregroundColor: Colors.white,
-                minimumSize: const Size(200, 50),
-              ),
-            ),
+                if (!hasAssessment)
+                  ElevatedButton.icon(
+                    onPressed: _toggleRecording,
+                    icon: Icon(_isRecording ? Icons.stop : Icons.mic_rounded),
+                    label: Text(
+                      _isRecording ? 'Stop Recording' : 'Start Recording',
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Color(AppConfig.primaryColor),
+                      foregroundColor: Colors.white,
+                      minimumSize: const Size(200, 50),
+                    ),
+                  ),
+                const SizedBox(height: 30),
+                ElevatedButton.icon(
+                  onPressed: wordSpeech,
+                  icon: Icon(Icons.help_outline),
+                  label: Text('Hear the word'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Color(AppConfig.primaryColor),
+                    foregroundColor: Colors.white,
+                    minimumSize: const Size(200, 50),
+                  ),
+                ),
+                const SizedBox(height: 30),
+                ElevatedButton.icon(
+                  onPressed: sentSpeech,
+                  icon: Icon(Icons.help_outline),
+                  label: Text('Hear a example'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Color(AppConfig.primaryColor),
+                    foregroundColor: Colors.white,
+                    minimumSize: const Size(200, 50),
+                  ),
+                ),
 
-          SizedBox(height: hasAssessment ? 5 : 30),
+                SizedBox(height: hasAssessment ? 5 : 30),
 
-          if (hasAssessment) ...[
-            _buildAssessmentView(_assessmentResult!),
-            const SizedBox(height: 30),
-          ],
-        ],
-      )
+                if (hasAssessment) ...[
+                  _buildAssessmentView(_assessmentResult!),
+                  const SizedBox(height: 30),
+                ],
+              ],
+            )
           : const Text("You need to enable permissions in the app settings"),
     );
 
@@ -579,11 +636,11 @@ class _PracticePageState extends State<PracticePage> {
         children: [
           hasAssessment
               ? SafeArea(
-            child: SingleChildScrollView(
-              physics: const BouncingScrollPhysics(),
-              child: content,
-            ),
-          )
+                  child: SingleChildScrollView(
+                    physics: const BouncingScrollPhysics(),
+                    child: content,
+                  ),
+                )
               : SafeArea(child: Center(child: content)),
 
           Align(
@@ -632,10 +689,7 @@ class _PracticePageState extends State<PracticePage> {
             Text(
               message,
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 30,
-                fontWeight: FontWeight.bold,
-              ),
+              style: const TextStyle(fontSize: 30, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 20),
             Text(
@@ -654,10 +708,7 @@ class _PracticePageState extends State<PracticePage> {
                 backgroundColor: Color(AppConfig.primaryColor),
                 foregroundColor: Colors.white,
               ),
-              child: const Text(
-                "Next Word",
-                style: TextStyle(fontSize: 22),
-              ),
+              child: const Text("Next Word", style: TextStyle(fontSize: 22)),
             ),
           ],
         ),

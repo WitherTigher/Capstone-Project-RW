@@ -136,21 +136,41 @@ class DatabaseHelper {
       params: {'user_id_input': userId},
     );
 
+    // fetch user's current_list_int
+    final userRow = await client
+        .from('users')
+        .select('current_list_int')
+        .eq('id', userId)
+        .maybeSingle();
+
+    final currentList = userRow?['current_list_int'] ?? 1;
+
     if (result is List && result.isNotEmpty) {
       final raw = Map<String, dynamic>.from(result.first);
 
       return {
         'totalAttempts': raw['totalattempts'] ?? 0,
-        'avgScore': raw['avgscore'] != null ? double.parse(raw['avgscore'].toString()) : 0.0,
+        'avgScore': raw['avgscore'] != null
+            ? double.parse(raw['avgscore'].toString())
+            : 0.0,
         'lastAttempt': raw['lastattempt'],
+        'currentList': currentList,
       };
     }
 
     if (result is Map<String, dynamic>) {
-      return result;
+      return {
+        ...result,
+        'currentList': currentList,
+      };
     }
 
-    return {'totalAttempts': 0, 'avgScore': 0, 'lastAttempt': null};
+    return {
+      'totalAttempts': 0,
+      'avgScore': 0,
+      'lastAttempt': null,
+      'currentList': currentList,
+    };
   }
 
   // ---------------------------------------------------------------------------

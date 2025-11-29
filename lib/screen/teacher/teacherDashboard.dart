@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:readright/config/config.dart';
+import 'package:readright/screen/teacher/teacherManageStudentsPage.dart';
 import 'package:readright/screen/teacher/teacherStudentView.dart';
 import 'package:readright/widgets/teacher_base_scaffold.dart';
 import 'package:readright/providers/teacherProvider.dart';
@@ -379,7 +380,18 @@ class _TeacherDashboardView extends StatelessWidget {
                                 width: double.infinity,
                                 height: 54,
                                 child: OutlinedButton.icon(
-                                  onPressed: () {},
+                                  onPressed: () async {
+                                    await Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) => ManageStudentsPage(),
+                                      ),
+                                    );
+
+                                    // Refresh when returning
+                                    provider.loadDashboard();
+                                    provider.loadMostMissedWords();
+                                  },
                                   icon: const Icon(Icons.group),
                                   label: const Text(
                                     'Manage Students',
@@ -719,11 +731,34 @@ class _BulkUploadStudentFormState extends State<_BulkUploadStudentForm> {
 
     setState(() => loading = true);
 
-    final r = await widget.provider.bulkAddStudents(rows);
+    final report = await widget.provider.bulkAddStudents(rows);
+
+    final added = report["added"] as List;
+    final failed = report["failed"] as List;
+
+    final buffer = StringBuffer();
+    buffer.writeln("Upload Finished:");
+    buffer.writeln("✓ ${added.length} succeeded");
+    buffer.writeln("✗ ${failed.length} failed\n");
+
+    if (added.isNotEmpty) {
+      buffer.writeln("--- Successful ---");
+      for (var s in added) {
+        buffer.writeln("${s['first_name']} ${s['last_name']} (${s['email']})");
+      }
+      buffer.writeln("");
+    }
+
+    if (failed.isNotEmpty) {
+      buffer.writeln("--- Failed ---");
+      for (var f in failed) {
+        buffer.writeln("${f['row']} → ${f['reason']}");
+      }
+    }
 
     setState(() {
       loading = false;
-      result = r;
+      result = buffer.toString();
     });
   }
 }

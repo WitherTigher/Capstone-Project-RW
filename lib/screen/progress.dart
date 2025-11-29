@@ -26,11 +26,19 @@ class _ProgressPageState extends State<ProgressPage> {
   List<Map<String, dynamic>> attempts = [];
   bool isLoading = true;
 
+  // Dolch list badges
+  final List<String> dolchLists = [
+    "Pre-Primer",
+    "Primer",
+    "1st Grade",
+    "2nd Grade",
+    "3rd Grade",
+  ];
+
   @override
   void initState() {
     super.initState();
 
-    // Test override: force UI loaded
     if (widget.testStartLoaded) {
       isLoading = false;
       return;
@@ -91,6 +99,11 @@ class _ProgressPageState extends State<ProgressPage> {
             children: [
               _buildSummary(),
               const SizedBox(height: 20),
+
+              // Badges section
+              _buildBadgesSection(),
+              const SizedBox(height: 20),
+
               _buildAttemptsCard(),
               const SizedBox(height: 16),
               _buildStatsCard(),
@@ -124,6 +137,49 @@ class _ProgressPageState extends State<ProgressPage> {
             style: TextStyle(color: Colors.grey.shade600),
           ),
         ],
+      ),
+    );
+  }
+
+  // Dolch badge section
+  Widget _buildBadgesSection() {
+    final currentList = (stats['currentList'] ?? 1) as int;
+
+    return _buildCard(
+      icon: Icons.emoji_events,
+      title: 'Dolch List Badges',
+      content: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: List.generate(dolchLists.length, (index) {
+          final unlocked = (index + 1) < currentList;
+
+          return Column(
+            children: [
+              CircleAvatar(
+                radius: 28,
+                backgroundColor: unlocked
+                    ? Color(AppConfig.primaryColor)
+                    : Colors.grey.shade300,
+                child: Icon(
+                  Icons.star,
+                  color: unlocked ? Colors.white : Colors.grey.shade500,
+                  size: 32,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                dolchLists[index],
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: unlocked
+                      ? Color(AppConfig.primaryColor)
+                      : Colors.grey.shade500,
+                ),
+              ),
+            ],
+          );
+        }),
       ),
     );
   }

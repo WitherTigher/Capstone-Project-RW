@@ -30,9 +30,8 @@ import 'package:readright/screen/teacher/teacherSettings.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  const supabaseUrl = 'https://byhmgdgjlyphwyilrfjm.supabase.co';
-  const supabaseAnonKey =
-      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ5aG1nZGdqbHlwaHd5aWxyZmptIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE4NDU1NDksImV4cCI6MjA3NzQyMTU0OX0.rkxUJIWYpoPpCV3azuK7vwenPATJeLjzTdTn13savZM';
+  const supabaseUrl = AppConfig.supabaseUrl;
+  const supabaseAnonKey = AppConfig.supabaseAnonKey;
 
   MediaKit.ensureInitialized();
 

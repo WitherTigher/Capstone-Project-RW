@@ -360,11 +360,18 @@ class TeacherProvider extends ChangeNotifier {
   }
 
   // -------------------------------------------------------
-  // BULK CSV IMPORT
+  // UPDATED BULK CSV IMPORT WITH DETAILED REPORT
   // -------------------------------------------------------
-  Future<String> bulkAddStudents(List<Map<String, String>> rows) async {
+  Future<Map<String, dynamic>> bulkAddStudents(List<Map<String, String>> rows) async {
     final teacher = supabase.auth.currentUser;
-    if (teacher == null) return "Not logged in.";
+    if (teacher == null) {
+      return {
+        "added": [],
+        "failed": [
+          {"row": null, "reason": "Not logged in."}
+        ]
+      };
+    }
 
     final classRow = await supabase
         .from('classes')
@@ -373,13 +380,18 @@ class TeacherProvider extends ChangeNotifier {
         .maybeSingle();
 
     if (classRow == null || classRow['id'] == null) {
-      return "No class found.";
+      return {
+        "added": [],
+        "failed": [
+          {"row": null, "reason": "No class found."}
+        ]
+      };
     }
 
     final classId = classRow['id'];
 
-    int added = 0;
-    int failed = 0;
+    final List<Map<String, String>> added = [];
+    final List<Map<String, String>> failed = [];
 
     for (final row in rows) {
       try {
@@ -396,29 +408,56 @@ class TeacherProvider extends ChangeNotifier {
 
         dynamic json;
 
-        if (res.data is String) {
-          try {
-            json = jsonDecode(res.data);
-          } catch (e) {
-            failed++;
-            continue;
-          }
-        } else {
-          json = res.data;
+        try {
+          json = res.data is String ? jsonDecode(res.data) : res.data;
+        } catch (_) {
+          failed.add({"row": jsonEncode(row), "reason": "Invalid JSON from server"});
+          continue;
         }
 
         if (json is Map && json["error"] != null) {
-          failed++;
+          failed.add({"row": jsonEncode(row), "reason": json["error"]});
         } else {
-          added++;
+          added.add(row);
         }
-      } catch (_) {
-        failed++;
+      } catch (e) {
+        failed.add({"row": jsonEncode(row), "reason": e.toString()});
       }
     }
 
     await loadDashboard();
 
-    return "Upload complete: $added added, $failed failed.";
+    return {
+      "added": added,
+      "failed": failed,
+    };
+  }
+
+  Future<String?> removeStudent(String studentId) async {
+    try {
+      final res = await supabase.functions.invoke(
+        'delete_user',
+        body: {"student_id": studentId},
+      );
+
+      if (res.data == null) {
+        return "No response from server";
+      }
+
+      final json = res.data;
+
+      if (json is Map && json["error"] != null) {
+        return json["error"];
+      }
+
+      if (json is Map && json["success"] == true) {
+        await loadDashboard();
+        return null;
+      }
+
+      return "Unexpected response format";
+    } catch (e) {
+      return "Failed to remove student: $e";
+    }
   }
 }

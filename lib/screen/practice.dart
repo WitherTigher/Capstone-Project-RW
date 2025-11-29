@@ -149,8 +149,110 @@ class _PracticePageState extends State<PracticePage> {
     } catch (_) {}
   }
 
+  // ---------------- NEW: CHECK LIST COMPLETION ----------------
+  Future<void> _checkListCompletion(String userId) async {
+    final listRecord = await _fetchCurrentListRecord(userId);
+    if (listRecord == null) return;
+
+    final listId = listRecord['list_id'] as String;
+
+    final words = await Supabase.instance.client
+        .from('words')
+        .select('id')
+        .eq('list_id', listId);
+
+    final mastered = await Supabase.instance.client
+        .from('mastered_words')
+        .select('word_id')
+        .eq('user_id', userId);
+
+    final masteredIds = mastered.map((m) => m['word_id']).toSet();
+
+    if (masteredIds.length == words.length) {
+      _showListCompleteBadge(listRecord);
+    }
+  }
+
+  // ---------------- NEW: POPUP BADGE ----------------
+  void _showListCompleteBadge(Map<String, dynamic> listRecord) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text(
+            "List Complete!",
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                "🎉 Great work!\nYou've mastered all the words in this list.",
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 18),
+              ),
+              const SizedBox(height: 20),
+              const Icon(Icons.emoji_events, size: 70, color: Colors.amber),
+              const SizedBox(height: 20),
+            ],
+          ),
+          actionsAlignment: MainAxisAlignment.center,
+          actions: [
+            ElevatedButton(
+              onPressed: () async {
+                Navigator.of(context).pop();
+                await _advanceToNextList();
+              },
+              child: const Text("Continue"),
+            )
+          ],
+        );
+      },
+    );
+  }
+
+  // ---------------- NEW: ADVANCE TO NEXT LIST ----------------
+  Future<void> _advanceToNextList() async {
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null) return;
+
+    final res = await Supabase.instance.client
+        .from('users')
+        .select('current_list_int')
+        .eq('id', user.id)
+        .maybeSingle();
+
+    if (res == null) return;
+
+    final current = res['current_list_int'] as int;
+    final next = current + 1;
+
+    // Stop if already at last list
+    if (next > 5) {
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("All Dolch lists completed!"))
+      );
+      return;
+    }
+
+    await Supabase.instance.client.from('users').update({
+      'current_list_int': next
+    }).eq('id', user.id);
+
+    // Reset mastered words when moving to a new list
+    await Supabase.instance.client
+        .from('mastered_words')
+        .delete()
+        .eq('user_id', user.id);
+
+    _loadNextWord();
+  }
+
+  // ------------------------------------------------------------
+
   Future<void> _loadNextWord() async {
-    // ADDED — skip ALL Supabase/logic during tests
     if (widget.testMode) {
       _loading = false;
       _currentWord = Word(id: "test", text: "cat", type: "word", sentences: []);
@@ -374,6 +476,9 @@ class _PracticePageState extends State<PracticePage> {
           }
 
           _confettiController.play();
+
+          // ---------------- NEW: Check if list finished ----------------
+          await _checkListCompletion(user.id);
         }
       }
     }

@@ -12,7 +12,7 @@ Teachers can assign custom word lists, review results, and optionally access stu
 ### Student
 - Practice reading from word lists (sight words, phonics, minimal pairs)
 - Record speech and receive pronunciation scores
-- Instant visual feedback and phoneme-level hints
+- Visual feedback and encouragement
 - Track progress with scores, averages, and streaks
 
 ### Teacher
@@ -28,58 +28,68 @@ Teachers can assign custom word lists, review results, and optionally access stu
 ```
 lib/
 │
-│── assets/
-│   └── logo.png
-│   └── seed_words.csv
+├── data/
+│   ├── models/                         # Core data models
+│   │   ├── assessment_result.dart
+│   │   ├── attempt.dart
+│   │   └── word.dart
+│   │
+│   └── providers/                      # State & backend providers
+│       ├── mock_provider.dart
+│       ├── provider_interface.dart
+│       ├── studentDashboardProvider.dart
+│       ├── supabase_provider.dart
+│       ├── teacherProvider.dart
+│       └── word_provider.dart
 │
-├── config/                # App-wide configuration values
-│   └── config.dart
+├── screen/
+│   ├── teacher/                        # Teacher-facing screens
+│   │   ├── teacherDashboard.dart
+│   │   ├── teacherSettings.dart
+│   │   ├── teacherStudents.dart
+│   │   ├── teacherStudentView.dart
+│   │   ├── teacherWordListDetailsPage.dart
+│   │   └── teacherWordLists.dart
+│   │
+│   ├── feedback.dart                   # Feedback after practice
+│   ├── login.dart                      # Authentication
+│   └── practice.dart                   # Recording/assessment flow
 │
-├── data/                  # Local files, placeholders, or cached data
-│   └── [placeholder]
+├── services/                           # Core business logic
+│   ├── databaseHelper.dart
+│   ├── offline_queue_service.dart
+│   └── sync_service.dart
 │
-├── models/                # Data models (e.g., Attempt, Word, User)
-│   └── attempt.dart
-│   └── word.dart
+├── widgets/                            # Shared reusable widgets
+│   ├── student_base_scaffold.dart
+│   ├── student_navbar.dart
+│   ├── sync_dialog.dart
+│   ├── sync_status_banner.dart
+│   ├── teacher_base_scaffold.dart
+│   └── teacher_navbar.dart
 │
-├── providers/                # Data models (e.g., Attempt, Word, User)
-│   └── mocK_provider.dart
-│   └── provider_interface.dart
-│
-├── screen/                # UI pages and main app flows
-│   ├── feedback.dart          # Feedback view after practice
-│   ├── practice.dart          # Recording and pronunciation assessment
-│   ├── progress.dart          # Progress tracking and charts
-│   ├── teacherDashboard.dart  # Teacher analytics overview
-│   ├── wordList.dart          # Word selection and sample sentences
-│   └── login.dart             # Authentication page
-│
-├── services/              # Business logic and backend communication
-│   └── databaseHelper.dart
-│
-├── widgets/               # Reusable UI components
-│   ├── base_scaffold.dart     # Common scaffold with bottom navigation
-│   └── navbar.dart            # Bottom navigation bar
-│
-└── main.dart              # App entry point and route configuration
+└── main.dart                           # App entry point
 ```
 
 Other folders:
-- **assets/** — Static files (e.g., CSVs, images, audio)
+- **assets/** — Static files (e.g., CSVs, images, etc.)
 - **test/** — Unit and widget tests
 
 ---
 
 ## Architecture
 
-| Layer | Description |
-|-------|--------------|
-| **UI / Screens** | Flutter widgets (FeedbackPage, PracticePage, ProgressPage, WordListPage) |
-| **Logic / State** | BLoC, Provider, or Riverpod for managing app state |
-| **Data Layer** | Firebase or local SQLite for user data and attempts |
-| **Audio Layer** | `flutter_sound` for recording and playback |
-| **Assessment** | Pluggable `PronunciationAssessor` interface for scoring |
-| **Export** | `csv` + `share_plus` for sharing progress data |
+| Layer                        | Description                                                                                                                                                                                                    |
+| ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **UI / Screens**             | Flutter screens for student and teacher workflows (Practice, Feedback, Teacher Dashboard, Word List Details, Student View). Handles navigation and user interaction.                                           |
+| **State / Providers**        | Custom provider classes (`studentDashboardProvider`, `teacherProvider`, `word_provider`, `supabase_provider`) manage app state, load Supabase data, hold session progress, and trigger UI updates.             |
+| **Data Layer (Supabase)**    | All persistent data comes from Supabase: students, teachers, attempts, recorded audio paths, Dolch word lists, and level progression. Communication goes through `supabase_provider.dart` and helper services. |
+| **Services Layer**           | `offline_queue_service.dart` stores attempts locally when offline; `sync_service.dart` flushes unsynced attempts and audio uploads; `databaseHelper.dart` handles caching and local lookups.                   |
+| **Audio Layer**              | Microphone recording for each word attempt, storing temporary audio locally, then uploading to Supabase storage during sync. Used within the Practice flow.                                                    |
+| **Assessment / Feedback**    | App determines correctness (match/mismatch) and generates student-facing encouragement messages and sample sentence playback.                                                                                  |
+| **Dolch Progression Engine** | Tracks mastered words, remaining words, 100% completion logic, and automatic advancement through: Pre-Primer → Primer → 1st → 2nd → 3rd.                                                                       |
+| **Assets Layer**             | Dolch CSV files parsed into `Word` models; used for list display, sample sentences, and practice sequencing.                                                                                                   |
+| **Sync & Resilience**        | Automatic retry logic, online/offline status banners, queued attempts, and background synchronization to ensure reliability in school Wi-Fi environments.                                                      |
 
 ---
 
@@ -88,16 +98,65 @@ Other folders:
 ```json
 {
   "users": {
-    "uid": "...",
-    "role": "student|teacher"
+    "id": "uuid",
+    "email": "text",
+    "first_name": "text",
+    "last_name": "text",
+    "role": "text",
+    "locale": "text",
+    "current_list_int": "integer",
+    "class_id": "uuid",
+    "save_audio": "boolean",
+    "created_at": "timestamptz"
   },
-  "attempts": [{
-    "uid": "...",
-    "wordText": "ship",
-    "score": 92,
-    "feedback": "Great /ʃ/ sound!",
-    "createdAt": "ISO8601"
-  }]
+
+  "classes": {
+    "id": "uuid",
+    "name": "text",
+    "grade_level": "text",
+    "teacher_id": "uuid",
+    "created_at": "timestamptz"
+  },
+
+  "word_lists": {
+    "id": "uuid",
+    "title": "text",
+    "category": "text",
+    "list_order": "integer",
+    "created_at": "timestamptz"
+  },
+
+  "words": {
+    "id": "uuid",
+    "list_id": "uuid",
+    "text": "text",
+    "type": "text",
+    "sentences": "text[]",
+    "created_at": "timestamptz"
+  },
+
+  "attempts": {
+    "id": "uuid",
+    "user_id": "uuid",
+    "word_id": "uuid",
+    "word_text": "text",
+    "score": "double precision",
+    "feedback": "text",
+    "duration": "numeric",
+    "recording_url": "text",
+    "timestamp": "timestamptz",
+    "created_at": "timestamptz"
+  },
+
+  "mastered_words": {
+    "id": "uuid",
+    "user_id": "uuid",
+    "word_id": "uuid",
+    "mastered_at": "timestamptz",
+    "last_attempt": "timestamptz",
+    "highest_score": "integer",
+    "attempt_count": "integer"
+  }
 }
 ```
 
@@ -115,15 +174,10 @@ Other folders:
    flutter pub get
    ```
 
-3. **Configure environment**
-    - Add your Firebase or Supabase config in `lib/config/config.dart`.
-    - Ensure audio permissions are enabled for Android and iOS.
-
-4. **Run the app**
+2. **Run the app**
    ```bash
    flutter run
    ```
-
 ---
 
 ## Testing
@@ -138,11 +192,7 @@ Other folders:
 
 ## Future Enhancements
 
-- Adaptive difficulty and minimal-pair drills
-- Teacher dashboard with class metrics
-- Voice model exemplars (TTS)
 - Accessibility improvements (dark mode, haptic feedback)
-- Retention policy UI and auto-purge job
 
 ---
 

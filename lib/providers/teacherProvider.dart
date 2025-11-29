@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:readright/services/databaseHelper.dart';
+import 'dart:convert';
 
 class StudentDashboardItem {
   final String id;
@@ -123,12 +124,10 @@ class TeacherProvider extends ChangeNotifier {
         return;
       }
 
-      final studentIds =
-      studentRows.map<String>((s) => s['id'] as String).toList();
+      final ids = studentRows.map<String>((s) => s['id'] as String).toList();
 
-      // Get most missed words only for these students
       mostMissedWords = await _db.fetchMostMissedWordsForStudents(
-        studentIds,
+        ids,
         limit: 10,
       );
 
@@ -191,16 +190,16 @@ class TeacherProvider extends ChangeNotifier {
         return;
       }
 
-      final studentIds = studentRows.map<String>((s) => s['id'] as String).toList();
+      final ids = studentRows.map<String>((s) => s['id'] as String).toList();
 
-      final accuracyMap = await _db.fetchAccuraciesForStudents(studentIds);
-      classAverageAccuracy = await _db.fetchAverageAccuracyForStudents(studentIds);
+      final accuracyMap = await _db.fetchAccuraciesForStudents(ids);
+      classAverageAccuracy = await _db.fetchAverageAccuracyForStudents(ids);
 
       needsHelpCount = accuracyMap.values.where((a) => a < 70).length;
 
+      String? top;
+      double best = -1;
       List<StudentDashboardItem> items = [];
-      String? topName;
-      double bestAccuracy = -1;
 
       for (final s in studentRows) {
         final id = s['id'];
@@ -212,34 +211,32 @@ class TeacherProvider extends ChangeNotifier {
             ? "$first $last".trim()
             : email;
 
-        final accuracy = (accuracyMap[id] ?? 0).toDouble();
+        final acc = (accuracyMap[id] ?? 0).toDouble();
 
-        // Trend
         final trend = await _db.fetchTrendForStudent(id);
         final last5 = (trend['last5'] ?? 0).toDouble();
         final prev5 = (trend['prev5'] ?? 0).toDouble();
-        final trendingUp = last5 >= prev5;
+        final up = last5 >= prev5;
 
-        // Leaderboard
-        if (accuracy > bestAccuracy) {
-          bestAccuracy = accuracy;
-          topName = name;
+        if (acc > best) {
+          best = acc;
+          top = name;
         }
 
         items.add(
           StudentDashboardItem(
             id: id,
             name: name,
-            progress: (accuracy / 100).clamp(0.0, 1.0),
-            accuracy: accuracy,
-            trendingUp: trendingUp,
+            progress: (acc / 100).clamp(0.0, 1.0),
+            accuracy: acc,
+            trendingUp: up,
           ),
         );
       }
 
       students = items;
-      topPerformerName = topName;
-      topPerformerAccuracy = bestAccuracy >= 0 ? bestAccuracy : null;
+      topPerformerName = top;
+      topPerformerAccuracy = best >= 0 ? best : null;
 
       dashboardLoading = false;
       notifyListeners();
@@ -257,10 +254,7 @@ class TeacherProvider extends ChangeNotifier {
 
       final res = await supabase
           .from('classes')
-          .insert({
-        'name': name,
-        'teacher_id': teacher.id,
-      })
+          .insert({'name': name, 'teacher_id': teacher.id})
           .select()
           .maybeSingle();
 
@@ -285,23 +279,146 @@ class TeacherProvider extends ChangeNotifier {
       listsError = null;
       notifyListeners();
 
-      final response = await supabase
+      final resp = await supabase
           .from('word_lists')
           .select()
           .order('list_order', ascending: true);
 
-      wordLists = (response as List)
+      wordLists = (resp as List)
           .map((row) => WordListItem.fromMap(row))
           .toList();
 
       listsLoading = false;
       notifyListeners();
     } catch (e) {
-      listsError = 'Failed to load word lists: $e';
+      listsError = "Failed to load word lists: $e";
       listsLoading = false;
       notifyListeners();
     }
   }
 
   Future<void> refreshWordLists() => loadWordLists();
+
+  // -------------------------------------------------------
+  // ADD NEW STUDENT
+  // -------------------------------------------------------
+  Future<String?> addStudent({
+    required String firstName,
+    required String lastName,
+    required String email,
+    required String password,
+  }) async {
+    try {
+      final teacher = supabase.auth.currentUser;
+      if (teacher == null) return "Not logged in.";
+
+      final classRow = await supabase
+          .from('classes')
+          .select('id')
+          .eq('teacher_id', teacher.id)
+          .maybeSingle();
+
+      if (classRow == null || classRow['id'] == null) {
+        return "No class found.";
+      }
+
+      final classId = classRow['id'];
+
+      final res = await supabase.functions.invoke(
+        'create_student',
+        body: {
+          "first_name": firstName,
+          "last_name": lastName,
+          "email": email,
+          "password": password,
+          "class_id": classId,
+        },
+      );
+
+      if (res.data == null) {
+        return "Unknown error (empty response)";
+      }
+
+      final raw = res.data;
+      dynamic json;
+
+      try {
+        json = raw is String ? jsonDecode(raw) : raw;
+      } catch (e) {
+        return "Invalid JSON returned from server";
+      }
+
+      if (json["error"] != null) {
+        return json["error"];
+      }
+
+      await loadDashboard();
+      return null;
+    } catch (e) {
+      return "Failed: $e";
+    }
+  }
+
+  // -------------------------------------------------------
+  // BULK CSV IMPORT
+  // -------------------------------------------------------
+  Future<String> bulkAddStudents(List<Map<String, String>> rows) async {
+    final teacher = supabase.auth.currentUser;
+    if (teacher == null) return "Not logged in.";
+
+    final classRow = await supabase
+        .from('classes')
+        .select('id')
+        .eq('teacher_id', teacher.id)
+        .maybeSingle();
+
+    if (classRow == null || classRow['id'] == null) {
+      return "No class found.";
+    }
+
+    final classId = classRow['id'];
+
+    int added = 0;
+    int failed = 0;
+
+    for (final row in rows) {
+      try {
+        final res = await supabase.functions.invoke(
+          'create_student',
+          body: {
+            "first_name": row["first_name"],
+            "last_name": row["last_name"],
+            "email": row["email"],
+            "password": row["password"],
+            "class_id": classId,
+          },
+        );
+
+        dynamic json;
+
+        if (res.data is String) {
+          try {
+            json = jsonDecode(res.data);
+          } catch (e) {
+            failed++;
+            continue;
+          }
+        } else {
+          json = res.data;
+        }
+
+        if (json is Map && json["error"] != null) {
+          failed++;
+        } else {
+          added++;
+        }
+      } catch (_) {
+        failed++;
+      }
+    }
+
+    await loadDashboard();
+
+    return "Upload complete: $added added, $failed failed.";
+  }
 }

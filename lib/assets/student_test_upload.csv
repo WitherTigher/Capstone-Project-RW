@@ -1,0 +1,11 @@
+first_name,last_name,email,password
+Test,Student1,teststudent1@example.com,Password123!
+Test,Student2,teststudent2@example.com,Password123!
+Test,Student3,teststudent3@example.com,Password123!
+New,UserA,newuserA@example.com,Password123!
+New,UserB,newuserB@example.com,Password123!
+Demo,StudentA,demostudentA@example.com,Password123!
+Demo,StudentB,demostudentB@example.com,Password123!
+Practice,One,practiceone@example.com,Password123!
+Practice,Two,practicetwo@example.com,Password123!
+Sample,User,sampleuser@example.com,Password123!

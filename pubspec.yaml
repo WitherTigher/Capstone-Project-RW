@@ -50,8 +50,7 @@ dependencies:
   # Speech/Recording
   stts: any
   record: any
-  flutter_tts: ^4.2.3
-
+  flutter_tts: 3.8.5
   # Permissions
   permission_handler: ^11.0.0
 

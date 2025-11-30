@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:stts/stts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:readright/config/config.dart';
 import 'package:readright/widgets/student_base_scaffold.dart';
@@ -151,12 +150,12 @@ class _PracticePageState extends State<PracticePage> {
     } catch (_) {}
   }
 
-  // ---------------- NEW: CHECK LIST COMPLETION ----------------
+  // Text to Speech
   Future<void> wordSpeech() async {
     if (_currentWord == null) return;
     await textspeech.setLanguage('en-US');
     await textspeech.setPitch(1.3);
-    await textspeech.setSpeechRate(.8);
+    await textspeech.setSpeechRate(.7);
     await textspeech.speak(_currentWord!.text);
   }
 
@@ -168,12 +167,12 @@ class _PracticePageState extends State<PracticePage> {
 
     await textspeech.setLanguage('en-US');
     await textspeech.setPitch(1.3);
-    await textspeech.setSpeechRate(.8);
+    await textspeech.setSpeechRate(.7);
     await textspeech.speak(_currentWord!.sentences[sentloop]);
     sentloop++;
   }
 
-  // ---------------- NEW: CHECK LIST COMPLETION ----------------
+  // Check list completion
   Future<void> _checkListCompletion(String userId) async {
     final listRecord = await _fetchCurrentListRecord(userId);
     if (listRecord == null) return;
@@ -197,7 +196,45 @@ class _PracticePageState extends State<PracticePage> {
     }
   }
 
-  // ---------------- NEW: POPUP BADGE ----------------
+  // Advance to the next list
+  Future<void> _advanceToNextList() async {
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null) return;
+
+    final res = await Supabase.instance.client
+        .from('users')
+        .select('current_list_int')
+        .eq('id', user.id)
+        .maybeSingle();
+
+    if (res == null) return;
+
+    final current = res['current_list_int'] as int;
+    final next = current + 1;
+
+    // Stop if already at last list
+    if (next > 5) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("All Dolch lists completed!")),
+      );
+      return;
+    }
+
+    await Supabase.instance.client
+        .from('users')
+        .update({'current_list_int': next})
+        .eq('id', user.id);
+
+    // Reset mastered words when moving to a new list
+    await Supabase.instance.client
+        .from('mastered_words')
+        .delete()
+        .eq('user_id', user.id);
+
+    _loadNextWord();
+  }
+
+  // Pop-up Badge
   void _showListCompleteBadge(Map<String, dynamic> listRecord) {
     showDialog(
       context: context,
@@ -235,44 +272,6 @@ class _PracticePageState extends State<PracticePage> {
         );
       },
     );
-  }
-
-  // ---------------- NEW: ADVANCE TO NEXT LIST ----------------
-  Future<void> _advanceToNextList() async {
-    final user = Supabase.instance.client.auth.currentUser;
-    if (user == null) return;
-
-    final res = await Supabase.instance.client
-        .from('users')
-        .select('current_list_int')
-        .eq('id', user.id)
-        .maybeSingle();
-
-    if (res == null) return;
-
-    final current = res['current_list_int'] as int;
-    final next = current + 1;
-
-    // Stop if already at last list
-    if (next > 5) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("All Dolch lists completed!")),
-      );
-      return;
-    }
-
-    await Supabase.instance.client
-        .from('users')
-        .update({'current_list_int': next})
-        .eq('id', user.id);
-
-    // Reset mastered words when moving to a new list
-    await Supabase.instance.client
-        .from('mastered_words')
-        .delete()
-        .eq('user_id', user.id);
-
-    _loadNextWord();
   }
 
   // ------------------------------------------------------------

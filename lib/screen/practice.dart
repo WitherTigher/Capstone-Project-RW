@@ -16,7 +16,6 @@ import 'package:confetti/confetti.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
-
 class PracticePage extends StatefulWidget {
   final bool testMode;
   final bool skipLoad;
@@ -172,6 +171,36 @@ class _PracticePageState extends State<PracticePage> {
     await textspeech.setSpeechRate(.7);
     await textspeech.speak(_currentWord!.sentences[sentloop]);
     sentloop++;
+  }
+
+  Future<void> conSpeech() async {
+    await textspeech.setLanguage('en-US');
+    await textspeech.setPitch(1.3);
+    await textspeech.setSpeechRate(.7);
+    await textspeech.speak(
+      "Great Job! You said ${_currentWord!.text} perfectly.",
+    );
+    await textspeech.speak(_currentWord!.sentences[0]);
+  }
+
+  Future<void> decentSpeech() async {
+    await textspeech.setLanguage('en-US');
+    await textspeech.setPitch(1.3);
+    await textspeech.setSpeechRate(.7);
+    await textspeech.speak(
+      "Great work, you said ${_currentWord!.text} correctly.",
+    );
+    await textspeech.speak(_currentWord!.sentences[0]);
+  }
+
+  Future<void> badSpeech() async {
+    await textspeech.setLanguage('en-US');
+    await textspeech.setPitch(1.3);
+    await textspeech.setSpeechRate(.7);
+    await textspeech.speak(
+      "Nice try, You were so close to saying ${_currentWord!.text} correctly.I believe you can do it",
+    );
+    await textspeech.speak(_currentWord!.sentences[0]);
   }
 
   // Check list completion
@@ -448,7 +477,8 @@ class _PracticePageState extends State<PracticePage> {
       final url = Uri.parse(
         "https://eastus2.stt.speech.microsoft.com/speech/recognition/conversation/cognitiveservices/v1?language=en-US",
       );
-      final audioBytes = await wavFile.readAsBytes();;
+      final audioBytes = await wavFile.readAsBytes();
+      ;
 
       final response = await http.post(
         url,
@@ -687,15 +717,19 @@ class _PracticePageState extends State<PracticePage> {
     if (score >= 90) {
       message = "Amazing job!";
       emoji = "🌟";
+      conSpeech();
     } else if (score >= 75) {
       message = "Great work!";
       emoji = "👍";
+      decentSpeech();
     } else if (score >= 50) {
       message = "Keep practicing!";
       emoji = "💪";
+      badSpeech();
     } else {
       message = "You're doing great — try again!";
       emoji = "😊";
+      badSpeech();
     }
 
     return Center(

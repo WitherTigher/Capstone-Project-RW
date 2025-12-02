@@ -35,16 +35,14 @@ lib/
 │   │   └── word.dart
 │   │
 │   └── providers/                      # State & backend providers
-│       ├── mock_provider.dart
-│       ├── provider_interface.dart
 │       ├── studentDashboardProvider.dart
-│       ├── supabase_provider.dart
 │       ├── teacherProvider.dart
-│       └── word_provider.dart
+│       └── theme_provider.dart
 │
 ├── screen/
 │   ├── teacher/                        # Teacher-facing screens
 │   │   ├── teacherDashboard.dart
+│   │   ├── teacherManageStudentsPage.dart
 │   │   ├── teacherSettings.dart
 │   │   ├── teacherStudents.dart
 │   │   ├── teacherStudentView.dart
@@ -53,18 +51,19 @@ lib/
 │   │
 │   ├── feedback.dart                   # Feedback after practice
 │   ├── login.dart                      # Authentication
-│   └── practice.dart                   # Recording/assessment flow
+│   ├── practice.dart                   # Recording/assessment flow
+│   ├── progress.dart
+│   ├── resetPassword.dart
+│   ├── signup.dart
+│   ├── studentDashboard.dart
+│   └── wordList.dart
 │
 ├── services/                           # Core business logic
-│   ├── databaseHelper.dart
-│   ├── offline_queue_service.dart
-│   └── sync_service.dart
+│   └── databaseHelper.dart
 │
 ├── widgets/                            # Shared reusable widgets
 │   ├── student_base_scaffold.dart
 │   ├── student_navbar.dart
-│   ├── sync_dialog.dart
-│   ├── sync_status_banner.dart
 │   ├── teacher_base_scaffold.dart
 │   └── teacher_navbar.dart
 │
@@ -79,17 +78,15 @@ Other folders:
 
 ## Architecture
 
-| Layer                        | Description                                                                                                                                                                                                    |
-| ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **UI / Screens**             | Flutter screens for student and teacher workflows (Practice, Feedback, Teacher Dashboard, Word List Details, Student View). Handles navigation and user interaction.                                           |
-| **State / Providers**        | Custom provider classes (`studentDashboardProvider`, `teacherProvider`, `word_provider`, `supabase_provider`) manage app state, load Supabase data, hold session progress, and trigger UI updates.             |
-| **Data Layer (Supabase)**    | All persistent data comes from Supabase: students, teachers, attempts, recorded audio paths, Dolch word lists, and level progression. Communication goes through `supabase_provider.dart` and helper services. |
-| **Services Layer**           | `offline_queue_service.dart` stores attempts locally when offline; `sync_service.dart` flushes unsynced attempts and audio uploads; `databaseHelper.dart` handles caching and local lookups.                   |
-| **Audio Layer**              | Microphone recording for each word attempt, storing temporary audio locally, then uploading to Supabase storage during sync. Used within the Practice flow.                                                    |
-| **Assessment / Feedback**    | App determines correctness (match/mismatch) and generates student-facing encouragement messages and sample sentence playback.                                                                                  |
-| **Dolch Progression Engine** | Tracks mastered words, remaining words, 100% completion logic, and automatic advancement through: Pre-Primer → Primer → 1st → 2nd → 3rd.                                                                       |
-| **Assets Layer**             | Dolch CSV files parsed into `Word` models; used for list display, sample sentences, and practice sequencing.                                                                                                   |
-| **Sync & Resilience**        | Automatic retry logic, online/offline status banners, queued attempts, and background synchronization to ensure reliability in school Wi-Fi environments.                                                      |
+| Layer                 | Description                                                                                                                                                                                                    |
+| --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **UI / Screens**      | Flutter screens for student and teacher workflows (Practice, Feedback, Teacher Dashboard, Word List Details, Student View). Handles navigation and user interaction.                                           |
+| **State / Providers** | Custom provider classes (`studentDashboardProvider`, `teacherProvider`, `word_provider`, `supabase_provider`) manage app state, load Supabase data, hold session progress, and trigger UI updates.             |
+| **Data Layer (Supabase)** | All persistent data comes from Supabase: students, teachers, attempts, recorded audio paths, Dolch word lists, and level progression. Communication goes through `supabase_provider.dart` and helper services. |
+| **Audio Layer**       | Microphone recording for each word attempt, storing temporary audio locally, then uploading to Supabase storage during sync. Used within the Practice flow.                                                    |
+| **Assessment / Feedback** | App determines correctness (match/mismatch) and generates student-facing encouragement messages and sample sentence playback.                                                                                  |
+| **Dolch Progression** | Tracks mastered words, remaining words, 100% completion logic, and automatic advancement through: Pre-Primer → Primer → 1st → 2nd → 3rd.                                                                       |
+| **Assets Layer**      | Dolch CSV files parsed into `Word` models; used for list display, sample sentences, and practice sequencing.                                                                                                   |
 
 ---
 
@@ -192,7 +189,8 @@ Other folders:
 
 ## Future Enhancements
 
-- Accessibility improvements (dark mode, haptic feedback)
+- Accessibility improvements (haptic feedback)
+- Verbal instructions
 
 ---
 

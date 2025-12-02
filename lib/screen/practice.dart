@@ -49,6 +49,11 @@ class _PracticePageState extends State<PracticePage> {
   bool _alphabeticalNextList = false;
   bool _popupShown = false;
 
+  void _retrySameWord() {
+    _assessmentResult = null;
+    setState(() {});
+  }
+
   @override
   void initState() {
     super.initState();
@@ -427,7 +432,7 @@ class _PracticePageState extends State<PracticePage> {
       sentences: (nextWord['sentences'] as List?)?.cast<String>() ?? [],
     );
 
-    // NEW LIST DETECTED
+    // New list detected
     _alphabeticalNextList = _isAlphabeticalWrap(_previousWord, newWord);
 
     if (_alphabeticalNextList && !_popupShown) {
@@ -812,6 +817,8 @@ class _PracticePageState extends State<PracticePage> {
       badSpeech();
     }
 
+    final bool mastered = score >= 90;
+
     return Center(
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 5),
@@ -834,27 +841,25 @@ class _PracticePageState extends State<PracticePage> {
               style: TextStyle(
                 fontSize: 25,
                 fontWeight: FontWeight.bold,
-                color:
-                score >= 75 ? Colors.green : Colors.orange,
+                color: score >= 75 ? Colors.green : Colors.orange,
               ),
             ),
             const SizedBox(height: 40),
 
-            // UPDATED BUTTON LOGIC
+            // Dynamically show the next word button
             ElevatedButton(
-              onPressed: _alphabeticalNextList
-                  ? _advanceToNextList
-                  : _loadNextWord,
+              onPressed: mastered
+                  ? (_alphabeticalNextList ? _advanceToNextList : _loadNextWord)
+                  : _retrySameWord,
               style: ElevatedButton.styleFrom(
                 minimumSize: const Size(230, 55),
-                backgroundColor:
-                Color(AppConfig.primaryColor),
+                backgroundColor: Color(AppConfig.primaryColor),
                 foregroundColor: Colors.white,
               ),
               child: Text(
-                _alphabeticalNextList
-                    ? "Next List"
-                    : "Next Word",
+                mastered
+                    ? (_alphabeticalNextList ? "Next List" : "Next Word")
+                    : "Try Again",
                 style: const TextStyle(fontSize: 22),
               ),
             ),

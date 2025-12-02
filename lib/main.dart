@@ -11,8 +11,6 @@ import 'package:readright/services/databaseHelper.dart';
 // Providers
 import 'package:readright/providers/studentDashboardProvider.dart';
 import 'package:readright/providers/teacherProvider.dart';
-import 'package:readright/providers/word_provider.dart';
-import 'package:readright/providers/supabase_provider.dart';
 
 // Screens
 import 'package:readright/screen/login.dart';
@@ -53,10 +51,6 @@ Future<void> main() async {
       providers: [
         ChangeNotifierProvider(create: (_) => StudentDashboardProvider()),
         ChangeNotifierProvider(create: (_) => TeacherProvider()),
-        // ADD WordProvider with SupabaseProvider
-        ChangeNotifierProvider(
-          create: (_) => WordProvider(provider: SupabaseProvider()),
-        ),
         ChangeNotifierProvider(create: (_) => ThemeProvider())
       ],
       child: const MyApp(),

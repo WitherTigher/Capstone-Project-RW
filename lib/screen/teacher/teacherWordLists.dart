@@ -45,7 +45,7 @@ class _WordListsView extends StatelessWidget {
                   ),
                 ),
               )
-                  : _buildListView(provider),
+                  : _buildListView(context, provider),
             ),
           ),
         );
@@ -53,19 +53,19 @@ class _WordListsView extends StatelessWidget {
     );
   }
 
-  Widget _buildListView(TeacherProvider provider) {
+  Widget _buildListView(BuildContext ctx, TeacherProvider provider) {
     return ListView.builder(
       physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.all(16),
       itemCount: provider.wordLists.length,
       itemBuilder: (context, index) {
         final item = provider.wordLists[index];
-        return _buildListCard(context, item);
+        return _buildListCard(context, item, ctx);
       },
     );
   }
 
-  Widget _buildListCard(BuildContext context, WordListItem item) {
+  Widget _buildListCard(BuildContext context, WordListItem item, BuildContext ctx) {
     return InkWell(
       onTap: () {
         Navigator.push(
@@ -98,10 +98,10 @@ class _WordListsView extends StatelessWidget {
                   children: [
                     Text(
                       item.title,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w600,
-                        color: Color(0xFF2D3748),
+                        color: Theme.of(ctx).colorScheme.secondary,
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -109,7 +109,7 @@ class _WordListsView extends StatelessWidget {
                       item.category,
                       style: TextStyle(
                         fontSize: 14,
-                        color: Colors.grey.shade700,
+                        color: Theme.of(ctx).colorScheme.onSurfaceVariant,
                       ),
                     ),
                     const SizedBox(height: 6),
@@ -117,7 +117,7 @@ class _WordListsView extends StatelessWidget {
                       'Created: ${item.createdAt.toLocal()}'.split('.').first,
                       style: TextStyle(
                         fontSize: 12,
-                        color: Colors.grey.shade600,
+                        color: Theme.of(ctx).colorScheme.onSurfaceVariant,
                       ),
                     ),
                   ],

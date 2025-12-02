@@ -134,6 +134,8 @@ class _MyAppState extends State<MyApp> {
 
   @override
   Widget build(BuildContext context) {
+    final themeProvider = Provider.of<ThemeProvider>(context);
+
     if (!_initialized || _checkingRole) {
       return const MaterialApp(
         home: Scaffold(body: Center(child: CircularProgressIndicator())),
@@ -144,7 +146,10 @@ class _MyAppState extends State<MyApp> {
       title: AppConfig.appName,
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        colorScheme: ColorScheme.light(
+        colorScheme: themeProvider.isDarkMode ? ColorScheme.dark(
+          primary: Color(AppConfig.primaryColor),
+          secondary: Color(AppConfig.secondaryColor),
+        ) : ColorScheme.light(
           primary: Color(AppConfig.primaryColor),
           secondary: Color(AppConfig.secondaryColor),
         ),

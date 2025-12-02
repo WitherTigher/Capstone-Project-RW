@@ -15,11 +15,11 @@ class AssessmentResult {
     required this.words,
   });
 
-  factory AssessmentResult.fromJson(Map<String, dynamic> json) {
-    final result = json["result"];
-    if (result == null) {
-      throw Exception("Missing result field");
-    }
+  factory AssessmentResult.fromJson(Map<String, dynamic> result) {
+    // final result = json["result"];
+    // if (result == null) {
+    //   throw Exception("Missing result field");
+    // }
 
     final nbestList = result["NBest"];
     if (nbestList == null || nbestList.isEmpty) {
@@ -28,7 +28,8 @@ class AssessmentResult {
 
     final nbest = nbestList[0];
 
-    final pa = nbest["PronunciationAssessment"] ?? {};
+    // final pa = nbest["PronunciationAssessment"] ?? {};
+    final pa = nbest;
 
     return AssessmentResult(
       accuracy: (pa["AccuracyScore"] ?? 0).toDouble(),

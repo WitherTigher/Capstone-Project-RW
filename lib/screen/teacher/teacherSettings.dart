@@ -78,7 +78,7 @@ class _TeacherSettingsPageState extends State<TeacherSettingsPage> {
                 "Enable or disable audio recording storage for students in your class.",
                 style: TextStyle(
                   fontSize: 16,
-                  color: Colors.grey.shade700,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant
                 ),
               ),
 

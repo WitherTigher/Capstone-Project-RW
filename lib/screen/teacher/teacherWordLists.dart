@@ -33,19 +33,49 @@ class _WordListsView extends StatelessWidget {
                   ? const Center(child: CircularProgressIndicator())
                   : provider.listsError != null
                   ? Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Text(
-                    provider.listsError!,
-                    style: const TextStyle(
-                      color: Colors.redAccent,
-                      fontWeight: FontWeight.w600,
+                      child: Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Text(
+                          provider.listsError!,
+                          style: const TextStyle(
+                            color: Colors.redAccent,
+                            fontWeight: FontWeight.w600,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    )
+                  : SingleChildScrollView(
+                      physics: AlwaysScrollableScrollPhysics(),
+                      child: Column(
+                        children: [
+                          _buildListView(context, provider),
+                          const SizedBox(height: 12),
+                          /*SizedBox(
+                            width: double.infinity,
+                            height: 54,
+                            child: OutlinedButton.icon(
+                              onPressed: () {
+                                showModalBottomSheet(
+                                  context: context,
+                                  isScrollControlled: true,
+                                  shape: const RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.vertical(
+                                      top: Radius.circular(24),
+                                    ),
+                                  ),
+                                  builder: (_) => _UploadnewList(
+                                    provider: provider,
+                                  ),
+                                );
+                              },
+                              icon: const Icon(Icons.upload_file),
+                              label: const Text("Upload New Custom List"),
+                            ),
+                          ),*/
+                        ],
+                      ),
                     ),
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-              )
-                  : _buildListView(context, provider),
             ),
           ),
         );
@@ -78,9 +108,7 @@ class _WordListsView extends StatelessWidget {
       borderRadius: BorderRadius.circular(16),
       child: Card(
         elevation: 3,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         margin: const EdgeInsets.only(bottom: 16),
         child: Padding(
           padding: const EdgeInsets.all(20.0),
@@ -131,3 +159,39 @@ class _WordListsView extends StatelessWidget {
     );
   }
 }
+
+/*class _UploadnewList extends StatefulWidget {
+  final TeacherProvider provider;
+  const _UploadnewList({required this.provider});
+
+  @override
+  State<_UploadnewList> createState() => _UploadnewList();
+}*/
+
+/*class _UploadnewList extends State<_UploadnewList> {
+  bool loading = false;
+  String? result;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Text(
+            "Upload New List",
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 20),
+          ElevatedButton(
+            onPressed: loading ? null : importCustomCSV,
+            child: const Text("Choose CSV File"),
+          ),
+          const SizedBox(height: 20),
+          if (loading) const CircularProgressIndicator(),
+          if (result != null) Text(result!),
+        ],
+      ),
+    );
+  }*/

@@ -1,7 +1,7 @@
 class Word {
   final String id;
   final String text;
-  final String type; // e.g., Dolch, Phonic, MinimalPairs
+  final String type;
   final List<String> sentences;
 
   Word({

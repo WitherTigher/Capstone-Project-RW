@@ -38,15 +38,11 @@ class _TeacherDashboardView extends StatelessWidget {
                 physics: const AlwaysScrollableScrollPhysics(),
                 child: Column(
                   children: [
-                    // ----------------------------------------------------
-                    // CREATE CLASS FORM (IF TEACHER HAS NO CLASS)
-                    // ----------------------------------------------------
+                    // Create class if teacher has no class
                     if (provider.needsClassCreated)
                       _CreateClassCard(provider: provider),
 
-                    // ----------------------------------------------------
-                    // STOP HERE — DO NOT SHOW DASHBOARD IF NO CLASS
-                    // ----------------------------------------------------
+                    // Don't show dashboard if no class
                     if (!provider.needsClassCreated) ...[
                       const SizedBox(height: 20),
                       // HEADER
@@ -88,13 +84,13 @@ class _TeacherDashboardView extends StatelessWidget {
                       ),
                       const SizedBox(height: 20),
 
-                      // LOADING STATE
+                      // Loading state
                       if (provider.dashboardLoading)
                         const Padding(
                           padding: EdgeInsets.only(top: 40.0),
                           child: Center(child: CircularProgressIndicator()),
                         )
-                      // ERROR STATE
+                      // Error state
                       else if (provider.dashboardError != null)
                         Padding(
                           padding: const EdgeInsets.all(16),
@@ -107,7 +103,7 @@ class _TeacherDashboardView extends StatelessWidget {
                             textAlign: TextAlign.center,
                           ),
                         )
-                      // MAIN CONTENT
+                      // Main content
                       else ...[
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -186,7 +182,7 @@ class _TeacherDashboardView extends StatelessWidget {
                                   Row(
                                     children: [
                                       const Icon(
-                                        Icons.warning_amber_rounded,
+                                        Icons.error_outline,
                                         color: Colors.orange,
                                       ),
                                       const SizedBox(width: 8),

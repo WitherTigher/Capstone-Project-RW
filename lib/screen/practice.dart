@@ -46,7 +46,6 @@ class _PracticePageState extends State<PracticePage> {
 
   late ConfettiController _confettiController;
 
-  // NEW FLAGS
   bool _alphabeticalNextList = false;
   bool _popupShown = false;
 
@@ -71,10 +70,7 @@ class _PracticePageState extends State<PracticePage> {
     }
   }
 
-  // ----------------------
 // Speech Helper Methods
-// ----------------------
-
   Future<void> wordSpeech() async {
     if (_currentWord == null) return;
     await textspeech.setLanguage('en-US');
@@ -133,7 +129,6 @@ class _PracticePageState extends State<PracticePage> {
   }
 
 
-  // NEW ALPHABETICAL CHECK
   bool _isAlphabeticalWrap(Word? current, Word? next) {
     if (current == null || next == null) return false;
 
@@ -142,7 +137,7 @@ class _PracticePageState extends State<PracticePage> {
 
     // If the next word starts with something earlier alphabetically,
     // this means we wrapped and started a new list.
-    return n.compareTo(c) < 0; // example: "your" -> "always"
+    return n.compareTo(c) < 0;
   }
 
   Future<void> _initRecording() async {
@@ -294,7 +289,7 @@ class _PracticePageState extends State<PracticePage> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // STAR WITH DYNAMIC GLOW
+                // Star with a glow
                 Container(
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,

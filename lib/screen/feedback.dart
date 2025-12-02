@@ -25,7 +25,7 @@ class FeedbackPage extends StatelessWidget {
               _buildTipsCard(),
               const SizedBox(height: 24),
               _buildActionButtons(context),
-              const SizedBox(height: 100), // for bottom nav
+              const SizedBox(height: 100),
             ],
           ),
         ),
@@ -33,7 +33,7 @@ class FeedbackPage extends StatelessWidget {
     );
   }
 
-  // ------------------ Header Section ------------------
+  // Header Section
   Widget _buildHeaderSection() {
     return Container(
       width: double.infinity,
@@ -88,7 +88,7 @@ class FeedbackPage extends StatelessWidget {
     );
   }
 
-  // ------------------ Pronunciation Score Card ------------------
+  // Pronunciation Score Card
   Widget _buildScoreCard() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0),
@@ -180,7 +180,7 @@ class FeedbackPage extends StatelessWidget {
     );
   }
 
-  // ------------------ Sound Analysis Card ------------------
+  // Sound Analysis Card
   Widget _buildSoundAnalysisCard() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0),
@@ -223,7 +223,7 @@ class FeedbackPage extends StatelessWidget {
     );
   }
 
-  // ------------------ Tips Card ------------------
+  // Tips Card
   Widget _buildTipsCard() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0),
@@ -260,7 +260,7 @@ class FeedbackPage extends StatelessWidget {
     );
   }
 
-  // ------------------ Action Buttons ------------------
+  // Action Buttons
   Widget _buildActionButtons(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0),
@@ -341,7 +341,7 @@ class FeedbackPage extends StatelessWidget {
     );
   }
 
-  // ------------------ Helper Widgets ------------------
+  // Helper Widgets
   Widget _buildPhonemeChip(String phoneme, bool isCorrect) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),

@@ -43,9 +43,7 @@ class StudentBaseScaffold extends StatelessWidget {
           ],
         ),
 
-        // ------------------------------
         // Logout button
-        // ------------------------------
         actions: [
           IconButton(
             icon: themeProvider.isDarkMode ? const Icon(Icons.light_mode, color: Colors.white) : const Icon(Icons.dark_mode, color: Colors.white),

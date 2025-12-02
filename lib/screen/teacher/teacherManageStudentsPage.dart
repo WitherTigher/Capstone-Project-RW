@@ -89,7 +89,7 @@ class ManageStudentsPage extends StatelessWidget {
                       return;
                     }
 
-                    // REQUIRED FOR AUTO REFRESH
+                    // Required for auto refresh
                     await provider.loadDashboard();
                   },
                 ),

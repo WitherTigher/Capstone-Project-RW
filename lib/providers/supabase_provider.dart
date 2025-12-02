@@ -138,7 +138,6 @@ class SupabaseProvider implements ProviderInterface {
 
   @override
   Future<double> compareRecording(String wordText, String userAudioPath) async {
-    // TODO: Implement real speech recognition comparison
     // For now, using mock scoring with slight delay
     await Future.delayed(const Duration(milliseconds: 500));
 
@@ -150,7 +149,7 @@ class SupabaseProvider implements ProviderInterface {
   Future<Attempt> saveAttempt({
     required String wordId,
     required double score,
-    required String audioPath, // added to match interface
+    required String audioPath,
     String? recordingUrl,
     String? feedback,
     double? duration,

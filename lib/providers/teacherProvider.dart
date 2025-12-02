@@ -62,9 +62,7 @@ class TeacherProvider extends ChangeNotifier {
   String? listsError;
   List<WordListItem> wordLists = [];
 
-  // ----------------------------------------------------------
-  // MOST MISSED WORDS
-  // ----------------------------------------------------------
+  // Most missed words
   List<Map<String, dynamic>> mostMissedWords = [];
   bool mostMissedLoading = true;
   String? mostMissedError;
@@ -77,9 +75,7 @@ class TeacherProvider extends ChangeNotifier {
     loadMostMissedWords();
   }
 
-  // ----------------------------------------------------------
-  // LOAD MOST MISSED WORDS
-  // ----------------------------------------------------------
+  // Load most missed words
   Future<void> loadMostMissedWords() async {
     try {
       mostMissedLoading = true;
@@ -140,9 +136,7 @@ class TeacherProvider extends ChangeNotifier {
     }
   }
 
-  // --------------------------------------------------------------------------
-  // DASHBOARD — FILTERED BY TEACHER'S CLASS
-  // --------------------------------------------------------------------------
+  // Dashboard
   Future<void> loadDashboard() async {
     dashboardLoading = true;
     dashboardError = null;
@@ -270,9 +264,7 @@ class TeacherProvider extends ChangeNotifier {
 
   Future<void> refreshDashboard() => loadDashboard();
 
-  // --------------------------------------------------------------------------
-  // WORD LISTS
-  // --------------------------------------------------------------------------
+  // Word lists
   Future<void> loadWordLists() async {
     try {
       listsLoading = true;
@@ -299,9 +291,7 @@ class TeacherProvider extends ChangeNotifier {
 
   Future<void> refreshWordLists() => loadWordLists();
 
-  // -------------------------------------------------------
-  // ADD NEW STUDENT
-  // -------------------------------------------------------
+  // Add new student
   Future<String?> addStudent({
     required String firstName,
     required String lastName,
@@ -359,9 +349,7 @@ class TeacherProvider extends ChangeNotifier {
     }
   }
 
-  // -------------------------------------------------------
-  // UPDATED BULK CSV IMPORT WITH DETAILED REPORT
-  // -------------------------------------------------------
+  // Bulk add students
   Future<Map<String, dynamic>> bulkAddStudents(List<Map<String, String>> rows) async {
     final teacher = supabase.auth.currentUser;
     if (teacher == null) {

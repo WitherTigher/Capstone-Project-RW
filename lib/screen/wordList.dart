@@ -23,9 +23,7 @@ class _WordListPageState extends State<WordListPage> {
     _loadCurrentWordList();
   }
 
-  // ------------------------------------------------------------
-  // LOAD CURRENT LIST + WORDS
-  // ------------------------------------------------------------
+  // Load current list and words
   Future<void> _loadCurrentWordList() async {
     final supabase = Supabase.instance.client;
 
@@ -39,7 +37,7 @@ class _WordListPageState extends State<WordListPage> {
         return;
       }
 
-      // 1. Fetch student’s current list index
+      // Fetch student’s current list index
       final userData = await supabase
           .from('users')
           .select('current_list_int')
@@ -56,7 +54,7 @@ class _WordListPageState extends State<WordListPage> {
 
       final currentOrder = userData['current_list_int'] as int;
 
-      // 2. Find the matching word list
+      // Find the matching word list
       final listData = await supabase
           .from('word_lists')
           .select('id, title, list_order')
@@ -74,7 +72,7 @@ class _WordListPageState extends State<WordListPage> {
       final listId = listData['id'] as String;
       _listTitle = listData['title'] ?? 'Current List';
 
-      // 3. Fetch words from this list
+      // Fetch words from this list
       final wordData = await supabase
           .from('words')
           .select('id, text, type, sentences')
@@ -101,9 +99,7 @@ class _WordListPageState extends State<WordListPage> {
     }
   }
 
-  // ------------------------------------------------------------
   //  UI
-  // ------------------------------------------------------------
   @override
   Widget build(BuildContext context) {
     return StudentBaseScaffold(
@@ -163,10 +159,9 @@ class _WordListPageState extends State<WordListPage> {
               ),
               const SizedBox(height: 20),
 
-              /// <<< NEW: horizontal flow layout >>>
               Wrap(
-                spacing: 16,       // horizontal spacing
-                runSpacing: 16,    // vertical spacing
+                spacing: 16,
+                runSpacing: 16,
                 alignment: WrapAlignment.center,
                 children: _words.map((w) => _buildWordChip(w)).toList(),
               ),

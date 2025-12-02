@@ -8,13 +8,13 @@ class ThemeProvider with ChangeNotifier {
   bool get isDarkMode => _themeMode == ThemeMode.dark;
 
   ThemeProvider() {
-    _loadTheme();  // Load on startup
+    _loadTheme();
   }
 
   void toggleTheme() async {
     _themeMode = isDarkMode ? ThemeMode.light : ThemeMode.dark;
     notifyListeners();
-    _saveTheme();  // Save after toggle
+    _saveTheme();
   }
 
   // Save theme to SharedPreferences

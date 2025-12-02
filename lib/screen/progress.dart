@@ -115,7 +115,7 @@ class _ProgressPageState extends State<ProgressPage> {
     );
   }
 
-  // ---------- UI Components ----------
+  // UI Components
 
   Widget _buildSummary(BuildContext context) {
     final avgScore = (stats['avgScore'] ?? 0).toDouble();

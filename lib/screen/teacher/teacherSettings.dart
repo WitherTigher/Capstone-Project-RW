@@ -61,9 +61,7 @@ class _TeacherSettingsPageState extends State<TeacherSettingsPage> {
           return ListView(
             padding: const EdgeInsets.all(16),
             children: [
-              // ------------------------------------------------------------
-              // HEADER UI
-              // ------------------------------------------------------------
+              // Header UI
               const Text(
                 "Student Audio Retention",
                 style: TextStyle(

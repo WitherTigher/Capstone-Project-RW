@@ -2,12 +2,12 @@ import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class StudentDashboardProvider extends ChangeNotifier {
-  SupabaseClient? client;                    // CHANGED (was final Supabase.instance)
-  final bool testMode;                       // ADDED
+  SupabaseClient? client;
+  final bool testMode;
 
   StudentDashboardProvider({this.testMode = false}) {
     if (!testMode) {
-      client = Supabase.instance.client;     // ONLY called in real app
+      client = Supabase.instance.client;
     }
   }
 
@@ -22,19 +22,15 @@ class StudentDashboardProvider extends ChangeNotifier {
   double accuracy = 0.0;
   List<Map<String, dynamic>> recentAttempts = [];
 
-  // ----------------------------------------------------------------------
-  // PUBLIC: Load everything for the dashboard
-  // ----------------------------------------------------------------------
-
+  // Load everything for the dashboard
   Future<void> loadDashboard() async {
 
-    // ADDED FOR TESTING: disable all Supabase access
+    // FOR TESTING: disable all Supabase access
     if (testMode) {
       isLoading = false;
       notifyListeners();
       return;
     }
-    // END ADDED
 
     isLoading = true;
     errorMessage = null;
@@ -63,10 +59,7 @@ class StudentDashboardProvider extends ChangeNotifier {
     }
   }
 
-  // ----------------------------------------------------------------------
-  // PRIVATE: 1. Load user info (uses current_list_int)
-  // ----------------------------------------------------------------------
-
+  // Load user info (uses current_list_int)
   Future<void> _loadUserInfo(String userId) async {
     final res = await client!
         .from('users')
@@ -83,10 +76,7 @@ class StudentDashboardProvider extends ChangeNotifier {
     };
   }
 
-  // ----------------------------------------------------------------------
-  // PRIVATE: 2. Load current Dolch list via RPC
-  // ----------------------------------------------------------------------
-
+  // Load current Dolch list via RPC
   Future<void> _loadCurrentList(String userId) async {
     final rpc = await client!.rpc(
       'get_current_list_for_student',
@@ -118,10 +108,7 @@ class StudentDashboardProvider extends ChangeNotifier {
     currentList = listRow;
   }
 
-  // ----------------------------------------------------------------------
-  // PRIVATE: 3. Calculate progress in current list
-  // ----------------------------------------------------------------------
-
+  // Calculate progress in current list
   Future<void> _loadListProgress(String userId) async {
     if (currentList == null || currentList!['id'] == null) {
       totalWords = 0;
@@ -171,10 +158,7 @@ class StudentDashboardProvider extends ChangeNotifier {
     }
   }
 
-  // ----------------------------------------------------------------------
-  // PRIVATE: 4. Recent attempts history (last 10)
-  // ----------------------------------------------------------------------
-
+  // Recent attempts history (last 10)
   Future<void> _loadRecentAttempts(String userId) async {
     final res = await client!
         .from('attempts')

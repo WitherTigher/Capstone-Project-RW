@@ -23,7 +23,6 @@ class _StudentDashboardState extends State<StudentDashboard> {
   void initState() {
     super.initState();
 
-    // ADDED FOR TESTS
     if (widget.testStartLoaded) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         context.read<StudentDashboardProvider>().isLoading = false;
@@ -34,7 +33,6 @@ class _StudentDashboardState extends State<StudentDashboard> {
     if (widget.skipLoad) {
       return;
     }
-    // END TEST CODE
 
     // Load dashboard on first frame
     WidgetsBinding.instance.addPostFrameCallback((_) {

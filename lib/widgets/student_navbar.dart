@@ -44,7 +44,6 @@ class StudentNavBar extends StatelessWidget {
       type: BottomNavigationBarType.fixed,
       showSelectedLabels: true,
       showUnselectedLabels: true,
-      backgroundColor: Colors.white,
       items: items,
     );
   }

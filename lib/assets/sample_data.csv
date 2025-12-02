@@ -1,0 +1,11 @@
+first_name,last_name,email,password
+Alpha,Student1,alphastudent1@example.com,Password123!
+Alpha,Student2,alphastudent2@example.com,Password123!
+Beta,Student1,betastudent1@example.com,Password123!
+Beta,Student2,betastudent2@example.com,Password123!
+Gamma,Student1,gammastudent1@example.com,Password123!
+Gamma,Student2,gammastudent2@example.com,Password123!
+Delta,Student1,deltastudent1@example.com,Password123!
+Delta,Student2,deltastudent2@example.com,Password123!
+Practice,Student1,practicestudent1@example.com,Password123!
+Practice,Student2,practicestudent2@example.com,Password123!

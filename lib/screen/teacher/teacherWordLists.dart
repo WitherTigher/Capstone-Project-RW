@@ -33,49 +33,19 @@ class _WordListsView extends StatelessWidget {
                   ? const Center(child: CircularProgressIndicator())
                   : provider.listsError != null
                   ? Center(
-                      child: Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Text(
-                          provider.listsError!,
-                          style: const TextStyle(
-                            color: Colors.redAccent,
-                            fontWeight: FontWeight.w600,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
-                    )
-                  : SingleChildScrollView(
-                      physics: AlwaysScrollableScrollPhysics(),
-                      child: Column(
-                        children: [
-                          _buildListView(provider),
-                          const SizedBox(height: 12),
-                          /*SizedBox(
-                            width: double.infinity,
-                            height: 54,
-                            child: OutlinedButton.icon(
-                              onPressed: () {
-                                showModalBottomSheet(
-                                  context: context,
-                                  isScrollControlled: true,
-                                  shape: const RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.vertical(
-                                      top: Radius.circular(24),
-                                    ),
-                                  ),
-                                  builder: (_) => _UploadnewList(
-                                    provider: provider,
-                                  ),
-                                );
-                              },
-                              icon: const Icon(Icons.upload_file),
-                              label: const Text("Upload New Custom List"),
-                            ),
-                          ),*/
-                        ],
-                      ),
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Text(
+                    provider.listsError!,
+                    style: const TextStyle(
+                      color: Colors.redAccent,
+                      fontWeight: FontWeight.w600,
                     ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              )
+                  : _buildListView(context, provider),
             ),
           ),
         );
@@ -83,19 +53,19 @@ class _WordListsView extends StatelessWidget {
     );
   }
 
-  Widget _buildListView(TeacherProvider provider) {
+  Widget _buildListView(BuildContext ctx, TeacherProvider provider) {
     return ListView.builder(
       physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.all(16),
       itemCount: provider.wordLists.length,
       itemBuilder: (context, index) {
         final item = provider.wordLists[index];
-        return _buildListCard(context, item);
+        return _buildListCard(context, item, ctx);
       },
     );
   }
 
-  Widget _buildListCard(BuildContext context, WordListItem item) {
+  Widget _buildListCard(BuildContext context, WordListItem item, BuildContext ctx) {
     return InkWell(
       onTap: () {
         Navigator.push(
@@ -108,7 +78,9 @@ class _WordListsView extends StatelessWidget {
       borderRadius: BorderRadius.circular(16),
       child: Card(
         elevation: 3,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
         margin: const EdgeInsets.only(bottom: 16),
         child: Padding(
           padding: const EdgeInsets.all(20.0),
@@ -126,10 +98,10 @@ class _WordListsView extends StatelessWidget {
                   children: [
                     Text(
                       item.title,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w600,
-                        color: Color(0xFF2D3748),
+                        color: Theme.of(ctx).colorScheme.secondary,
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -137,7 +109,7 @@ class _WordListsView extends StatelessWidget {
                       item.category,
                       style: TextStyle(
                         fontSize: 14,
-                        color: Colors.grey.shade700,
+                        color: Theme.of(ctx).colorScheme.onSurfaceVariant,
                       ),
                     ),
                     const SizedBox(height: 6),
@@ -145,7 +117,7 @@ class _WordListsView extends StatelessWidget {
                       'Created: ${item.createdAt.toLocal()}'.split('.').first,
                       style: TextStyle(
                         fontSize: 12,
-                        color: Colors.grey.shade600,
+                        color: Theme.of(ctx).colorScheme.onSurfaceVariant,
                       ),
                     ),
                   ],
@@ -159,39 +131,3 @@ class _WordListsView extends StatelessWidget {
     );
   }
 }
-
-/*class _UploadnewList extends StatefulWidget {
-  final TeacherProvider provider;
-  const _UploadnewList({required this.provider});
-
-  @override
-  State<_UploadnewList> createState() => _UploadnewList();
-}*/
-
-/*class _UploadnewList extends State<_UploadnewList> {
-  bool loading = false;
-  String? result;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Text(
-            "Upload New List",
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 20),
-          ElevatedButton(
-            onPressed: loading ? null : importCustomCSV,
-            child: const Text("Choose CSV File"),
-          ),
-          const SizedBox(height: 20),
-          if (loading) const CircularProgressIndicator(),
-          if (result != null) Text(result!),
-        ],
-      ),
-    );
-  }*/

@@ -54,7 +54,6 @@ class _TeacherDashboardView extends StatelessWidget {
                         width: double.infinity,
                         padding: const EdgeInsets.all(24.0),
                         decoration: const BoxDecoration(
-                          color: Colors.white,
                           borderRadius: BorderRadius.only(
                             bottomLeft: Radius.circular(24),
                             bottomRight: Radius.circular(24),
@@ -68,12 +67,12 @@ class _TeacherDashboardView extends StatelessWidget {
                               color: Color(AppConfig.primaryColor),
                             ),
                             const SizedBox(height: 12),
-                            const Text(
+                            Text(
                               'Class Progress Overview',
                               style: TextStyle(
                                 fontSize: 22,
                                 fontWeight: FontWeight.bold,
-                                color: Color(0xFF2D3748),
+                                color: Theme.of(context).colorScheme.secondary
                               ),
                             ),
                             const SizedBox(height: 8),
@@ -81,7 +80,7 @@ class _TeacherDashboardView extends StatelessWidget {
                               'Monitor each student’s pronunciation and improvement',
                               style: TextStyle(
                                 fontSize: 16,
-                                color: Colors.grey.shade600,
+                                color: Theme.of(context).colorScheme.onSurfaceVariant,
                               ),
                             ),
                           ],
@@ -129,12 +128,12 @@ class _TeacherDashboardView extends StatelessWidget {
                                         color: Color(AppConfig.primaryColor),
                                       ),
                                       const SizedBox(width: 8),
-                                      const Text(
+                                      Text(
                                         'Class Performance Summary',
                                         style: TextStyle(
                                           fontSize: 18,
                                           fontWeight: FontWeight.w600,
-                                          color: Color(0xFF2D3748),
+                                          color: Theme.of(context).colorScheme.secondary,
                                         ),
                                       ),
                                     ],
@@ -145,16 +144,19 @@ class _TeacherDashboardView extends StatelessWidget {
                                         MainAxisAlignment.spaceBetween,
                                     children: [
                                       _buildStatTile(
+                                        context,
                                         'Avg. Accuracy',
                                         '${provider.classAverageAccuracy.toStringAsFixed(0)}%',
                                         Color(AppConfig.primaryColor),
                                       ),
                                       _buildStatTile(
+                                        context,
                                         'Top Performer',
                                         provider.topPerformerName ?? 'No data',
                                         Color(AppConfig.secondaryColor),
                                       ),
                                       _buildStatTile(
+                                        context,
                                         'Needs Help',
                                         '${provider.needsHelpCount} Students',
                                         Colors.redAccent,
@@ -282,6 +284,7 @@ class _TeacherDashboardView extends StatelessWidget {
                                               );
                                             },
                                             child: _buildStudentCard(
+                                              context: context,
                                               name: s.name,
                                               progress: s.progress,
                                               accuracy: s.accuracy.toInt(),
@@ -469,7 +472,7 @@ class _TeacherDashboardView extends StatelessWidget {
     );
   }
 
-  Widget _buildStatTile(String label, String value, Color color) {
+  Widget _buildStatTile(BuildContext context, String label, String value, Color color) {
     return Column(
       children: [
         Text(
@@ -483,13 +486,14 @@ class _TeacherDashboardView extends StatelessWidget {
         const SizedBox(height: 4),
         Text(
           label,
-          style: const TextStyle(fontSize: 14, color: Color(0xFF4A5568)),
+          style: TextStyle(fontSize: 14, color: Theme.of(context).colorScheme.onSurfaceVariant),
         ),
       ],
     );
   }
 
   Widget _buildStudentCard({
+    required BuildContext context,
     required String name,
     required double progress,
     required int accuracy,
@@ -510,10 +514,10 @@ class _TeacherDashboardView extends StatelessWidget {
                 Expanded(
                   child: Text(
                     name,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w600,
-                      color: Color(0xFF2D3748),
+                      color: Theme.of(context).colorScheme.secondary,
                     ),
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -536,7 +540,7 @@ class _TeacherDashboardView extends StatelessWidget {
               'Accuracy: $accuracy%',
               style: TextStyle(
                 fontSize: 14,
-                color: Colors.grey.shade600,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
                 fontWeight: FontWeight.w500,
               ),
             ),

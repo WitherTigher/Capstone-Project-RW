@@ -593,7 +593,7 @@ class _PracticePageState extends State<PracticePage> {
                   size: 80,
                   color: _isRecording
                       ? Color(AppConfig.primaryColor)
-                      : Colors.grey.shade700,
+                      : Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
 
                 if (_isRecording && !_micIsReady)
@@ -622,10 +622,10 @@ class _PracticePageState extends State<PracticePage> {
 
                 Text(
                   _currentWord?.text ?? '',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 42,
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFF2D3748),
+                    color: Theme.of(context).colorScheme.secondary
                   ),
                 ),
 

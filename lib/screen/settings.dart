@@ -61,9 +61,7 @@ class _SettingsPageState extends State<SettingsPage> {
       padding: const EdgeInsets.all(16.0),
       child: Card(
         elevation: 3,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         child: Padding(
           padding: const EdgeInsets.all(20.0),
           child: Column(
@@ -79,15 +77,12 @@ class _SettingsPageState extends State<SettingsPage> {
                   const SizedBox(width: 8),
                   const Text(
                     'Sync Status',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                    ),
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
                   ),
                 ],
               ),
               const SizedBox(height: 16),
-              
+
               // Queue count
               _buildStatusRow(
                 'Pending Attempts',
@@ -96,22 +91,23 @@ class _SettingsPageState extends State<SettingsPage> {
                     ? Colors.orange
                     : Color(AppConfig.primaryColor),
               ),
-              
+
               const SizedBox(height: 12),
-              
+
               // Last sync time
               _buildStatusRow(
                 'Last Sync',
                 _queueStatus?.lastSyncTime != null
-                    ? DateFormat('MMM dd, yyyy • HH:mm')
-                        .format(_queueStatus!.lastSyncTime!)
+                    ? DateFormat(
+                        'MMM dd, yyyy • HH:mm',
+                      ).format(_queueStatus!.lastSyncTime!)
                     : 'Never',
                 Colors.grey.shade600,
               ),
-              
+
               const SizedBox(height: 12),
-              
-              // Connection status
+
+              // Connection statuss
               _buildStatusRow(
                 'Connection',
                 _queueStatus?.hasConnection == true ? 'Online' : 'Offline',
@@ -119,9 +115,9 @@ class _SettingsPageState extends State<SettingsPage> {
                     ? Color(AppConfig.primaryColor)
                     : Colors.red,
               ),
-              
+
               const SizedBox(height: 20),
-              
+
               // Sync button
               if (_queueStatus?.needsSync == true)
                 SizedBox(
@@ -197,10 +193,7 @@ class _SettingsPageState extends State<SettingsPage> {
       children: [
         Text(
           label,
-          style: TextStyle(
-            fontSize: 14,
-            color: Colors.grey.shade600,
-          ),
+          style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
         ),
         Text(
           value,
@@ -219,9 +212,7 @@ class _SettingsPageState extends State<SettingsPage> {
       padding: const EdgeInsets.all(16.0),
       child: Card(
         elevation: 3,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         child: Padding(
           padding: const EdgeInsets.all(20.0),
           child: Column(
@@ -237,10 +228,7 @@ class _SettingsPageState extends State<SettingsPage> {
                   const SizedBox(width: 8),
                   const Text(
                     'Offline Mode',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                    ),
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
                   ),
                 ],
               ),
@@ -264,9 +252,8 @@ class _SettingsPageState extends State<SettingsPage> {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => SyncDialog(
-        wordProvider: context.read<WordProvider>(),
-      ),
+      builder: (context) =>
+          SyncDialog(wordProvider: context.read<WordProvider>()),
     );
 
     // Reload status after sync

@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:provider/provider.dart';
+import 'package:readright/providers/theme_provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:readright/config/config.dart';
@@ -56,6 +57,7 @@ Future<void> main() async {
         ChangeNotifierProvider(
           create: (_) => WordProvider(provider: SupabaseProvider()),
         ),
+        ChangeNotifierProvider(create: (_) => ThemeProvider())
       ],
       child: const MyApp(),
     ),

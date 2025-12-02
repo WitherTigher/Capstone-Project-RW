@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:readright/config/config.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:readright/widgets/student_navbar.dart';
+
+import '../providers/theme_provider.dart';
+
 
 class StudentBaseScaffold extends StatelessWidget {
   final Widget body;
@@ -19,6 +23,8 @@ class StudentBaseScaffold extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final themeProvider = Provider.of<ThemeProvider>(context);
+
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Color(AppConfig.primaryColor),
@@ -42,10 +48,10 @@ class StudentBaseScaffold extends StatelessWidget {
         // ------------------------------
         actions: [
           IconButton(
-            icon: const Icon(Icons.dark_mode, color: Colors.white),
+            icon: themeProvider.isDarkMode ? const Icon(Icons.light_mode, color: Colors.white) : const Icon(Icons.dark_mode, color: Colors.white),
             tooltip: 'Dark mode',
             onPressed: () async {
-
+              themeProvider.toggleTheme();
             },
           ),
           IconButton(

@@ -26,8 +26,11 @@ import 'package:readright/screen/teacher/teacherDashboard.dart';
 import 'package:readright/screen/teacher/teacherWordLists.dart';
 import 'package:readright/screen/teacher/teacherStudents.dart';
 import 'package:readright/screen/teacher/teacherSettings.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+
 
 Future<void> main() async {
+  await dotenv.load(fileName: ".env");
   WidgetsFlutterBinding.ensureInitialized();
 
   const supabaseUrl = AppConfig.supabaseUrl;

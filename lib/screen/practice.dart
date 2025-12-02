@@ -14,6 +14,7 @@ import 'package:record/record.dart';
 import '../models/assessment_result.dart';
 import 'package:confetti/confetti.dart';
 import 'package:flutter_tts/flutter_tts.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class PracticePage extends StatefulWidget {
   final bool testMode;
@@ -170,6 +171,36 @@ class _PracticePageState extends State<PracticePage> {
     await textspeech.setSpeechRate(.7);
     await textspeech.speak(_currentWord!.sentences[sentloop]);
     sentloop++;
+  }
+
+  Future<void> conSpeech() async {
+    await textspeech.setLanguage('en-US');
+    await textspeech.setPitch(1.3);
+    await textspeech.setSpeechRate(.7);
+    await textspeech.speak(
+      "Great Job! You said ${_currentWord!.text} perfectly.",
+    );
+    await textspeech.speak(_currentWord!.sentences[0]);
+  }
+
+  Future<void> decentSpeech() async {
+    await textspeech.setLanguage('en-US');
+    await textspeech.setPitch(1.3);
+    await textspeech.setSpeechRate(.7);
+    await textspeech.speak(
+      "Great work, you said ${_currentWord!.text} correctly.",
+    );
+    await textspeech.speak(_currentWord!.sentences[0]);
+  }
+
+  Future<void> badSpeech() async {
+    await textspeech.setLanguage('en-US');
+    await textspeech.setPitch(1.3);
+    await textspeech.setSpeechRate(.7);
+    await textspeech.speak(
+      "Nice try, You were so close to saying ${_currentWord!.text} correctly.I believe you can do it",
+    );
+    await textspeech.speak(_currentWord!.sentences[0]);
   }
 
   // Check list completion
@@ -434,14 +465,31 @@ class _PracticePageState extends State<PracticePage> {
     while (goThrough < loop && continues == true) {
       goThrough++;
 
-      final uri = Uri.parse("${_getServerBaseUrl()}/assess");
-      final request = http.MultipartRequest("POST", uri)
-        ..files.add(
-          await http.MultipartFile.fromPath("audio_file", wavFile.path),
-        )
-        ..fields["reference_text"] = _currentWord!.text;
+      final key = dotenv.env['AZURE_KEY'] as String;
 
-      final response = await request.send();
+      final configJson = {
+        "referenceText": _currentWord!.text,
+        "gradingSystem": "HundredMark",
+        "dimension": "Comprehensive",
+        // "phonemeAlphabet": "IPA"
+      };
+      final configBase64 = base64.encode(utf8.encode(json.encode(configJson)));
+      final url = Uri.parse(
+        "https://eastus2.stt.speech.microsoft.com/speech/recognition/conversation/cognitiveservices/v1?language=en-US",
+      );
+      final audioBytes = await wavFile.readAsBytes();
+      ;
+
+      final response = await http.post(
+        url,
+        headers: {
+          "Ocp-Apim-Subscription-Key": key,
+          "Content-Type": "audio/wav",
+          "Pronunciation-Assessment": configBase64,
+        },
+        body: audioBytes,
+      );
+
       final user = Supabase.instance.client.auth.currentUser;
       if (user == null) return;
 
@@ -459,8 +507,11 @@ class _PracticePageState extends State<PracticePage> {
       } else if (response.statusCode == 200) {
         continues = false;
 
-        final body = await response.stream.bytesToString();
+        final body = response.body;
+        // final body = await response.stream.bytesToString();
+        print(body);
         final decoded = jsonDecode(body);
+        print(decoded);
         _assessmentResult = AssessmentResult.fromJson(decoded);
 
         final wordId = _currentWord!.id;
@@ -666,15 +717,19 @@ class _PracticePageState extends State<PracticePage> {
     if (score >= 90) {
       message = "Amazing job!";
       emoji = "🌟";
+      conSpeech();
     } else if (score >= 75) {
       message = "Great work!";
       emoji = "👍";
+      decentSpeech();
     } else if (score >= 50) {
       message = "Keep practicing!";
       emoji = "💪";
+      badSpeech();
     } else {
       message = "You're doing great — try again!";
       emoji = "😊";
+      badSpeech();
     }
 
     return Center(

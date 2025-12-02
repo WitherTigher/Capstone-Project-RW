@@ -97,16 +97,16 @@ class _ProgressPageState extends State<ProgressPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildSummary(),
+              _buildSummary(context),
               const SizedBox(height: 20),
 
               // Badges section
-              _buildBadgesSection(),
+              _buildBadgesSection(context),
               const SizedBox(height: 20),
 
-              _buildAttemptsCard(),
+              _buildAttemptsCard(context),
               const SizedBox(height: 16),
-              _buildStatsCard(),
+              _buildStatsCard(context),
               const SizedBox(height: 100),
             ],
           ),
@@ -117,12 +117,11 @@ class _ProgressPageState extends State<ProgressPage> {
 
   // ---------- UI Components ----------
 
-  Widget _buildSummary() {
+  Widget _buildSummary(BuildContext context) {
     final avgScore = (stats['avgScore'] ?? 0).toDouble();
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(24),
-      color: Colors.white,
       child: Column(
         children: [
           const Text(
@@ -134,7 +133,7 @@ class _ProgressPageState extends State<ProgressPage> {
           const SizedBox(height: 8),
           Text(
             'Average Score (${stats['totalAttempts'] ?? 0} attempts)',
-            style: TextStyle(color: Colors.grey.shade600),
+            style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
           ),
         ],
       ),
@@ -142,10 +141,11 @@ class _ProgressPageState extends State<ProgressPage> {
   }
 
   // Dolch badge section
-  Widget _buildBadgesSection() {
+  Widget _buildBadgesSection(BuildContext context) {
     final currentList = (stats['currentList'] ?? 1) as int;
 
     return _buildCard(
+      context: context,
       icon: Icons.emoji_events,
       title: 'Dolch List Badges',
       content: Row(
@@ -184,8 +184,9 @@ class _ProgressPageState extends State<ProgressPage> {
     );
   }
 
-  Widget _buildAttemptsCard() {
+  Widget _buildAttemptsCard(BuildContext context) {
     return _buildCard(
+      context: context,
       icon: Icons.history,
       title: 'Recent Practice Sessions',
       content: attempts.isEmpty
@@ -196,32 +197,34 @@ class _ProgressPageState extends State<ProgressPage> {
               a['words']?['text'] ?? a['word_text'] ?? 'Unknown';
           final score = a['score'] ?? 0;
           final feedback = a['feedback'] ?? 'No feedback';
-          return _buildAttemptRow(wordText, score, feedback);
+          return _buildAttemptRow(context, wordText, score, feedback);
         }).toList(),
       ),
     );
   }
 
-  Widget _buildStatsCard() {
+  Widget _buildStatsCard(BuildContext context) {
     return _buildCard(
+      context: context,
       icon: Icons.emoji_events,
       title: 'Stats',
       content: Column(
         children: [
-          _buildStatRow('Total Attempts', '${stats['totalAttempts'] ?? 0}'),
-          _buildStatRow(
+          _buildStatRow(context, 'Total Attempts', '${stats['totalAttempts'] ?? 0}'),
+          _buildStatRow(context,
             'Average Score',
             stats['avgScore'] != null
                 ? (stats['avgScore'] as num).toStringAsFixed(1)
                 : '0',
           ),
-          _buildStatRow('Last Attempt', formatDate(stats['lastAttempt'])),
+          _buildStatRow(context, 'Last Attempt', formatDate(stats['lastAttempt'])),
         ],
       ),
     );
   }
 
   Widget _buildCard({
+    required BuildContext context,
     required IconData icon,
     required String title,
     required Widget content,
@@ -242,10 +245,10 @@ class _ProgressPageState extends State<ProgressPage> {
                   const SizedBox(width: 8),
                   Text(
                     title,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 18,
-                      color: Color(0xFF2D3748),
+                      color: Theme.of(context).colorScheme.secondary
                     ),
                   ),
                 ],
@@ -279,7 +282,7 @@ class _ProgressPageState extends State<ProgressPage> {
     ),
   );
 
-  Widget _buildAttemptRow(String word, int score, String feedback) => Padding(
+  Widget _buildAttemptRow(BuildContext context, String word, int score, String feedback) => Padding(
     padding: const EdgeInsets.symmetric(vertical: 8.0),
     child: Row(
       children: [
@@ -308,20 +311,20 @@ class _ProgressPageState extends State<ProgressPage> {
           child: Text(
             feedback,
             overflow: TextOverflow.ellipsis,
-            style: TextStyle(color: Colors.grey.shade600),
+            style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
           ),
         ),
       ],
     ),
   );
 
-  Widget _buildStatRow(String label, String value) => Padding(
+  Widget _buildStatRow(BuildContext context, String label, String value) => Padding(
     padding: const EdgeInsets.symmetric(vertical: 6.0),
     child: Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(label,
-            style: TextStyle(color: Colors.grey.shade700, fontSize: 16)),
+            style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 16)),
         Text(
           value,
           style: TextStyle(

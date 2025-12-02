@@ -71,3 +71,5 @@ windows/build/
 # Linux
 linux/flutter/ephemeral/
 linux/build/
+
+.env

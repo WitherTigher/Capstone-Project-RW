@@ -40,9 +40,15 @@ class _PracticePageState extends State<PracticePage> {
   bool _showCountdown = false;
 
   Word? _currentWord;
+  Word? _previousWord;
+
   AssessmentResult? _assessmentResult;
 
   late ConfettiController _confettiController;
+
+  // NEW FLAGS
+  bool _alphabeticalNextList = false;
+  bool _popupShown = false;
 
   @override
   void initState() {
@@ -63,6 +69,80 @@ class _PracticePageState extends State<PracticePage> {
       _loading = false;
       _currentWord = Word(id: "test", text: "cat", type: "word", sentences: []);
     }
+  }
+
+  // ----------------------
+// Speech Helper Methods
+// ----------------------
+
+  Future<void> wordSpeech() async {
+    if (_currentWord == null) return;
+    await textspeech.setLanguage('en-US');
+    await textspeech.setPitch(1.3);
+    await textspeech.setSpeechRate(.7);
+    await textspeech.speak(_currentWord!.text);
+  }
+
+  Future<void> sentSpeech() async {
+    if (_currentWord == null || _currentWord!.sentences.isEmpty) return;
+    if (sentloop >= _currentWord!.sentences.length) {
+      sentloop = 0;
+    }
+
+    await textspeech.setLanguage('en-US');
+    await textspeech.setPitch(1.3);
+    await textspeech.setSpeechRate(.7);
+    await textspeech.speak(_currentWord!.sentences[sentloop]);
+    sentloop++;
+  }
+
+  Future<void> conSpeech() async {
+    await textspeech.setLanguage('en-US');
+    await textspeech.setPitch(1.3);
+    await textspeech.setSpeechRate(.7);
+    await textspeech.speak(
+      "Great Job! You said ${_currentWord!.text} perfectly.",
+    );
+    if (_currentWord!.sentences.isNotEmpty) {
+      await textspeech.speak(_currentWord!.sentences[0]);
+    }
+  }
+
+  Future<void> decentSpeech() async {
+    await textspeech.setLanguage('en-US');
+    await textspeech.setPitch(1.3);
+    await textspeech.setSpeechRate(.7);
+    await textspeech.speak(
+      "Great work, you said ${_currentWord!.text} correctly.",
+    );
+    if (_currentWord!.sentences.isNotEmpty) {
+      await textspeech.speak(_currentWord!.sentences[0]);
+    }
+  }
+
+  Future<void> badSpeech() async {
+    await textspeech.setLanguage('en-US');
+    await textspeech.setPitch(1.3);
+    await textspeech.setSpeechRate(.7);
+    await textspeech.speak(
+      "Nice try! You were close to saying ${_currentWord!.text} correctly. I believe you can do it!",
+    );
+    if (_currentWord!.sentences.isNotEmpty) {
+      await textspeech.speak(_currentWord!.sentences[0]);
+    }
+  }
+
+
+  // NEW ALPHABETICAL CHECK
+  bool _isAlphabeticalWrap(Word? current, Word? next) {
+    if (current == null || next == null) return false;
+
+    final c = current.text.toLowerCase();
+    final n = next.text.toLowerCase();
+
+    // If the next word starts with something earlier alphabetically,
+    // this means we wrapped and started a new list.
+    return n.compareTo(c) < 0; // example: "your" -> "always"
   }
 
   Future<void> _initRecording() async {
@@ -92,9 +172,9 @@ class _PracticePageState extends State<PracticePage> {
   }
 
   Future<Map<String, dynamic>?> _fetchUnmasteredWord(
-    String userId,
-    String listId,
-  ) async {
+      String userId,
+      String listId,
+      ) async {
     final mastered = await _masteredWordIdList(userId);
 
     List<dynamic> rows;
@@ -151,83 +231,6 @@ class _PracticePageState extends State<PracticePage> {
     } catch (_) {}
   }
 
-  // Text to Speech
-  Future<void> wordSpeech() async {
-    if (_currentWord == null) return;
-    await textspeech.setLanguage('en-US');
-    await textspeech.setPitch(1.3);
-    await textspeech.setSpeechRate(.7);
-    await textspeech.speak(_currentWord!.text);
-  }
-
-  Future<void> sentSpeech() async {
-    if (_currentWord == null || _currentWord!.sentences.isEmpty) return;
-    if (sentloop >= _currentWord!.sentences.length) {
-      sentloop = 0;
-    }
-
-    await textspeech.setLanguage('en-US');
-    await textspeech.setPitch(1.3);
-    await textspeech.setSpeechRate(.7);
-    await textspeech.speak(_currentWord!.sentences[sentloop]);
-    sentloop++;
-  }
-
-  Future<void> conSpeech() async {
-    await textspeech.setLanguage('en-US');
-    await textspeech.setPitch(1.3);
-    await textspeech.setSpeechRate(.7);
-    await textspeech.speak(
-      "Great Job! You said ${_currentWord!.text} perfectly.",
-    );
-    await textspeech.speak(_currentWord!.sentences[0]);
-  }
-
-  Future<void> decentSpeech() async {
-    await textspeech.setLanguage('en-US');
-    await textspeech.setPitch(1.3);
-    await textspeech.setSpeechRate(.7);
-    await textspeech.speak(
-      "Great work, you said ${_currentWord!.text} correctly.",
-    );
-    await textspeech.speak(_currentWord!.sentences[0]);
-  }
-
-  Future<void> badSpeech() async {
-    await textspeech.setLanguage('en-US');
-    await textspeech.setPitch(1.3);
-    await textspeech.setSpeechRate(.7);
-    await textspeech.speak(
-      "Nice try, You were so close to saying ${_currentWord!.text} correctly.I believe you can do it",
-    );
-    await textspeech.speak(_currentWord!.sentences[0]);
-  }
-
-  // Check list completion
-  Future<void> _checkListCompletion(String userId) async {
-    final listRecord = await _fetchCurrentListRecord(userId);
-    if (listRecord == null) return;
-
-    final listId = listRecord['list_id'] as String;
-
-    final words = await Supabase.instance.client
-        .from('words')
-        .select('id')
-        .eq('list_id', listId);
-
-    final mastered = await Supabase.instance.client
-        .from('mastered_words')
-        .select('word_id')
-        .eq('user_id', userId);
-
-    final masteredIds = mastered.map((m) => m['word_id']).toSet();
-
-    if (masteredIds.length == words.length) {
-      _showListCompleteBadge(listRecord);
-    }
-  }
-
-  // Advance to the next list
   Future<void> _advanceToNextList() async {
     final user = Supabase.instance.client.auth.currentUser;
     if (user == null) return;
@@ -256,58 +259,124 @@ class _PracticePageState extends State<PracticePage> {
         .update({'current_list_int': next})
         .eq('id', user.id);
 
-    // Reset mastered words when moving to a new list
+    // Reset mastered words
     await Supabase.instance.client
         .from('mastered_words')
         .delete()
         .eq('user_id', user.id);
 
+    _popupShown = false;
+    _alphabeticalNextList = false;
+
     _loadNextWord();
   }
 
-  // Pop-up Badge
-  void _showListCompleteBadge(Map<String, dynamic> listRecord) {
-    showDialog(
+  Future _showListPopup() {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    final bgColor = isDark ? theme.colorScheme.surface : Colors.white;
+    final textColor = isDark ? Colors.white : Colors.black87;
+    final subTextColor = isDark ? Colors.white70 : Colors.black54;
+
+    return showDialog(
       context: context,
       barrierDismissible: false,
       builder: (context) {
-        return AlertDialog(
-          title: const Text(
-            "List Complete!",
-            textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
+        return Dialog(
+          insetPadding: const EdgeInsets.symmetric(horizontal: 25, vertical: 120),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(25),
           ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text(
-                "🎉 Great work!\nYou've mastered all the words in this list.",
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 18),
-              ),
-              const SizedBox(height: 20),
-              const Icon(Icons.emoji_events, size: 70, color: Colors.amber),
-              const SizedBox(height: 20),
-            ],
-          ),
-          actionsAlignment: MainAxisAlignment.center,
-          actions: [
-            ElevatedButton(
-              onPressed: () async {
-                Navigator.of(context).pop();
-                await _advanceToNextList();
-              },
-              child: const Text("Continue"),
+          backgroundColor: bgColor,
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // STAR WITH DYNAMIC GLOW
+                Container(
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: isDark
+                        ? Colors.yellow.shade200.withOpacity(0.15)
+                        : Colors.yellow.shade100,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.yellow.shade400.withOpacity(
+                          isDark ? 0.4 : 0.8,
+                        ),
+                        blurRadius: 25,
+                        spreadRadius: 5,
+                      ),
+                    ],
+                  ),
+                  padding: const EdgeInsets.all(20),
+                  child: Icon(
+                    Icons.star_rounded,
+                    size: 90,
+                    color: isDark ? Colors.orange.shade300 : Colors.orange,
+                  ),
+                ),
+
+                const SizedBox(height: 25),
+
+                Text(
+                  "Amazing Job!",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 32,
+                    fontWeight: FontWeight.bold,
+                    color: textColor,
+                  ),
+                ),
+
+                const SizedBox(height: 12),
+
+                Text(
+                  "You've finished this list!\nYou're becoming a reading superstar!",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 20,
+                    height: 1.4,
+                    color: subTextColor,
+                  ),
+                ),
+
+                const SizedBox(height: 30),
+
+                ElevatedButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 30, vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    backgroundColor: theme.colorScheme.primary,
+                    foregroundColor: theme.colorScheme.onPrimary,
+                    elevation: 3,
+                  ),
+                  child: const Text(
+                    "Continue",
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         );
       },
     );
   }
 
-  // ------------------------------------------------------------
-
+  // MAIN LOGIC UPDATED HERE
   Future<void> _loadNextWord() async {
+    _previousWord = _currentWord;
+
     if (widget.testMode) {
       _loading = false;
       _currentWord = Word(id: "test", text: "cat", type: "word", sentences: []);
@@ -346,26 +415,42 @@ class _PracticePageState extends State<PracticePage> {
 
     final nextWord = await _fetchUnmasteredWord(user.id, listId);
     if (nextWord == null) {
-      await Future.delayed(const Duration(milliseconds: 100));
-      return _loadNextWord();
+      _alphabeticalNextList = true;
+      _loading = false;
+      if (!_popupShown) {
+        _popupShown = true;
+        _showListPopup();
+      }
+      setState(() {});
+      return;
     }
 
-    _currentWord = Word(
+    final newWord = Word(
       id: nextWord['id'],
       text: nextWord['text'],
       type: nextWord['type'],
       sentences: (nextWord['sentences'] as List?)?.cast<String>() ?? [],
     );
 
+    // NEW LIST DETECTED
+    _alphabeticalNextList = _isAlphabeticalWrap(_previousWord, newWord);
+
+    if (_alphabeticalNextList && !_popupShown) {
+      _popupShown = true;
+      _showListPopup();
+    }
+
+    _currentWord = newWord;
+
     _loading = false;
     setState(() {});
   }
 
+  // Assessment handling unchanged except for button logic
   Future<void> _toggleRecording() async {
     if (!_hasPermission) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text("Mic permission denied")));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text("Mic permission denied")));
       return;
     }
 
@@ -396,27 +481,27 @@ class _PracticePageState extends State<PracticePage> {
     _isRecording = true;
     setState(() {});
 
-    record.onAmplitudeChanged(const Duration(milliseconds: 100)).listen((
-      amp,
-    ) async {
-      if (!_micIsReady && amp.current != null) {
-        _micIsReady = true;
+    record.onAmplitudeChanged(const Duration(milliseconds: 100)).listen(
+          (amp) async {
+        if (!_micIsReady && amp.current != null) {
+          _micIsReady = true;
 
-        setState(() {
-          _showCountdown = true;
-          _countdown = 3;
-        });
+          setState(() {
+            _showCountdown = true;
+            _countdown = 3;
+          });
 
-        for (int i = 3; i > 0; i--) {
-          await Future.delayed(const Duration(seconds: 1));
+          for (int i = 3; i > 0; i--) {
+            await Future.delayed(const Duration(seconds: 1));
+            if (!mounted) return;
+            setState(() => _countdown = i);
+          }
+
           if (!mounted) return;
-          setState(() => _countdown = i);
+          setState(() => _showCountdown = false);
         }
-
-        if (!mounted) return;
-        setState(() => _showCountdown = false);
-      }
-    });
+      },
+    );
   }
 
   Future<void> _stopRecordingAndSend() async {
@@ -428,33 +513,6 @@ class _PracticePageState extends State<PracticePage> {
     await _sendToAssessmentServer(File(path));
   }
 
-  Future<bool> _shouldSaveAudio(String userId) async {
-    final res = await Supabase.instance.client
-        .from('users')
-        .select('save_audio')
-        .eq('id', userId)
-        .maybeSingle();
-
-    if (res == null) return false;
-    return res['save_audio'] == true;
-  }
-
-  Future<bool> _isWordAlreadyMastered(String userId, String wordId) async {
-    final res = await Supabase.instance.client
-        .from('mastered_words')
-        .select('word_id')
-        .eq('user_id', userId)
-        .eq('word_id', wordId)
-        .maybeSingle();
-
-    return res != null;
-  }
-
-  String _getServerBaseUrl() {
-    if (Platform.isAndroid) return "http://10.0.2.2:5001";
-    return "http://127.0.0.1:5001";
-  }
-
   Future<void> _sendToAssessmentServer(File wavFile) async {
     if (_currentWord == null) return;
 
@@ -462,7 +520,7 @@ class _PracticePageState extends State<PracticePage> {
     int goThrough = 0;
     bool continues = true;
 
-    while (goThrough < loop && continues == true) {
+    while (goThrough < loop && continues) {
       goThrough++;
 
       final key = dotenv.env['AZURE_KEY'] as String;
@@ -471,14 +529,15 @@ class _PracticePageState extends State<PracticePage> {
         "referenceText": _currentWord!.text,
         "gradingSystem": "HundredMark",
         "dimension": "Comprehensive",
-        // "phonemeAlphabet": "IPA"
       };
-      final configBase64 = base64.encode(utf8.encode(json.encode(configJson)));
+      final configBase64 =
+      base64.encode(utf8.encode(json.encode(configJson)));
+
       final url = Uri.parse(
         "https://eastus2.stt.speech.microsoft.com/speech/recognition/conversation/cognitiveservices/v1?language=en-US",
       );
+
       final audioBytes = await wavFile.readAsBytes();
-      ;
 
       final response = await http.post(
         url,
@@ -501,17 +560,12 @@ class _PracticePageState extends State<PracticePage> {
         setState(() {});
         return;
       } else if (response.statusCode != 200) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text("Retrying...")));
-      } else if (response.statusCode == 200) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(const SnackBar(content: Text("Retrying...")));
+      } else {
         continues = false;
 
-        final body = response.body;
-        // final body = await response.stream.bytesToString();
-        print(body);
-        final decoded = jsonDecode(body);
-        print(decoded);
+        final decoded = jsonDecode(response.body);
         _assessmentResult = AssessmentResult.fromJson(decoded);
 
         final wordId = _currentWord!.id;
@@ -520,7 +574,7 @@ class _PracticePageState extends State<PracticePage> {
         final shouldSave = await _shouldSaveAudio(user.id);
         String? url;
 
-        if (shouldSave == true) {
+        if (shouldSave) {
           try {
             final fileName =
                 'recordings/${user.id}/${DateTime.now().millisecondsSinceEpoch}.wav';
@@ -535,11 +589,9 @@ class _PracticePageState extends State<PracticePage> {
           } catch (_) {
             url = null;
           }
-        } else {
-          url = null;
         }
 
-        final Map<String, dynamic> attemptRow = {
+        final row = {
           'user_id': user.id,
           'word_id': wordId,
           'score': score,
@@ -547,25 +599,47 @@ class _PracticePageState extends State<PracticePage> {
           'timestamp': DateTime.now().toIso8601String(),
         };
 
-        if (url != null) attemptRow['recording_url'] = url;
+        if (url != null) row['recording_url'] = url;
 
-        await Supabase.instance.client.from('attempts').insert(attemptRow);
+        await Supabase.instance.client.from('attempts').insert(row);
 
         if (score >= 90) {
-          final already = await _isWordAlreadyMastered(user.id, wordId);
+          final already =
+          await _isWordAlreadyMastered(user.id, wordId);
           if (!already) {
-            await _storeMasteredWord(userId: user.id, wordId: wordId);
+            await _storeMasteredWord(
+                userId: user.id, wordId: wordId);
           }
 
           _confettiController.play();
-
-          // ---------------- NEW: Check if list finished ----------------
-          await _checkListCompletion(user.id);
         }
       }
     }
 
     setState(() {});
+  }
+
+  Future<bool> _shouldSaveAudio(String userId) async {
+    final res = await Supabase.instance.client
+        .from('users')
+        .select('save_audio')
+        .eq('id', userId)
+        .maybeSingle();
+
+    if (res == null) return false;
+    return res['save_audio'] == true;
+  }
+
+  Future<bool> _isWordAlreadyMastered(
+      String userId, String wordId) async {
+    final res = await Supabase.instance.client
+        .from('mastered_words')
+        .select('word_id')
+        .eq('user_id', userId)
+        .eq('word_id', wordId)
+        .maybeSingle();
+
+    return res != null;
   }
 
   @override
@@ -583,98 +657,108 @@ class _PracticePageState extends State<PracticePage> {
       padding: const EdgeInsets.all(24),
       child: _hasPermission
           ? Column(
-              mainAxisAlignment: hasAssessment
-                  ? MainAxisAlignment.start
-                  : MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Icon(
-                  _isRecording ? Icons.mic : Icons.mic_none,
-                  size: 80,
-                  color: _isRecording
-                      ? Color(AppConfig.primaryColor)
-                      : Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
+        mainAxisAlignment: hasAssessment
+            ? MainAxisAlignment.start
+            : MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Icon(
+            _isRecording ? Icons.mic : Icons.mic_none,
+            size: 80,
+            color: _isRecording
+                ? Color(AppConfig.primaryColor)
+                : Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
 
-                if (_isRecording && !_micIsReady)
-                  const Text(
-                    "Preparing microphone...",
-                    style: TextStyle(fontSize: 18, color: Colors.orange),
-                  ),
+          if (_isRecording && !_micIsReady)
+            const Text(
+              "Preparing microphone...",
+              style: TextStyle(fontSize: 18, color: Colors.orange),
+            ),
 
-                if (_isRecording && _showCountdown)
-                  Text(
-                    "Starting in $_countdown...",
-                    style: const TextStyle(
-                      fontSize: 28,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.red,
-                    ),
-                  ),
+          if (_isRecording && _showCountdown)
+            Text(
+              "Starting in $_countdown...",
+              style: const TextStyle(
+                fontSize: 28,
+                fontWeight: FontWeight.bold,
+                color: Colors.red,
+              ),
+            ),
 
-                if (_isRecording && _micIsReady && !_showCountdown)
-                  const Text(
-                    "Speak now!",
-                    style: TextStyle(fontSize: 20, color: Colors.green),
-                  ),
+          if (_isRecording && _micIsReady && !_showCountdown)
+            const Text(
+              "Speak now!",
+              style: TextStyle(fontSize: 20, color: Colors.green),
+            ),
 
-                const SizedBox(height: 16),
+          const SizedBox(height: 16),
 
-                Text(
-                  _currentWord?.text ?? '',
-                  style: TextStyle(
-                    fontSize: 42,
-                    fontWeight: FontWeight.bold,
-                    color: Theme.of(context).colorScheme.secondary
-                  ),
-                ),
+          Text(
+            _currentWord?.text ?? '',
+            style: TextStyle(
+              fontSize: 42,
+              fontWeight: FontWeight.bold,
+              color: Theme.of(context).colorScheme.secondary,
+            ),
+          ),
 
-                const SizedBox(height: 30),
+          const SizedBox(height: 30),
 
-                if (!hasAssessment)
-                  ElevatedButton.icon(
-                    onPressed: _toggleRecording,
-                    icon: Icon(_isRecording ? Icons.stop : Icons.mic_rounded),
-                    label: Text(
-                      _isRecording ? 'Stop Recording' : 'Start Recording',
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Color(AppConfig.primaryColor),
-                      foregroundColor: Colors.white,
-                      minimumSize: const Size(200, 50),
-                    ),
-                  ),
-                const SizedBox(height: 30),
-                ElevatedButton.icon(
-                  onPressed: wordSpeech,
-                  icon: Icon(Icons.help_outline),
-                  label: Text('Hear the word'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Color(AppConfig.primaryColor),
-                    foregroundColor: Colors.white,
-                    minimumSize: const Size(200, 50),
-                  ),
-                ),
-                const SizedBox(height: 30),
-                ElevatedButton.icon(
-                  onPressed: sentSpeech,
-                  icon: Icon(Icons.help_outline),
-                  label: Text('Hear a example'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Color(AppConfig.primaryColor),
-                    foregroundColor: Colors.white,
-                    minimumSize: const Size(200, 50),
-                  ),
-                ),
+          if (!hasAssessment)
+            ElevatedButton.icon(
+              onPressed: _toggleRecording,
+              icon:
+              Icon(_isRecording ? Icons.stop : Icons.mic_rounded),
+              label: Text(
+                _isRecording
+                    ? 'Stop Recording'
+                    : 'Start Recording',
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor:
+                Color(AppConfig.primaryColor),
+                foregroundColor: Colors.white,
+                minimumSize: const Size(200, 50),
+              ),
+            ),
 
-                SizedBox(height: hasAssessment ? 5 : 30),
+          const SizedBox(height: 30),
 
-                if (hasAssessment) ...[
-                  _buildAssessmentView(_assessmentResult!),
-                  const SizedBox(height: 30),
-                ],
-              ],
-            )
+          ElevatedButton.icon(
+            onPressed: wordSpeech,
+            icon: Icon(Icons.help_outline),
+            label: Text('Hear the word'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor:
+              Color(AppConfig.primaryColor),
+              foregroundColor: Colors.white,
+              minimumSize: const Size(200, 50),
+            ),
+          ),
+
+          const SizedBox(height: 30),
+
+          ElevatedButton.icon(
+            onPressed: sentSpeech,
+            icon: Icon(Icons.help_outline),
+            label: Text('Hear an example'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor:
+              Color(AppConfig.primaryColor),
+              foregroundColor: Colors.white,
+              minimumSize: const Size(200, 50),
+            ),
+          ),
+
+          SizedBox(height: hasAssessment ? 5 : 30),
+
+          if (hasAssessment) ...[
+            _buildAssessmentView(_assessmentResult!),
+            const SizedBox(height: 30),
+          ],
+        ],
+      )
           : const Text("You need to enable permissions in the app settings"),
     );
 
@@ -686,18 +770,19 @@ class _PracticePageState extends State<PracticePage> {
         children: [
           hasAssessment
               ? SafeArea(
-                  child: SingleChildScrollView(
-                    physics: const BouncingScrollPhysics(),
-                    child: content,
-                  ),
-                )
+            child: SingleChildScrollView(
+              physics: const BouncingScrollPhysics(),
+              child: content,
+            ),
+          )
               : SafeArea(child: Center(child: content)),
 
           Align(
             alignment: Alignment.topCenter,
             child: ConfettiWidget(
               confettiController: _confettiController,
-              blastDirectionality: BlastDirectionality.explosive,
+              blastDirectionality:
+              BlastDirectionality.explosive,
               shouldLoop: false,
               emissionFrequency: 0.05,
               numberOfParticles: 20,
@@ -743,7 +828,10 @@ class _PracticePageState extends State<PracticePage> {
             Text(
               message,
               textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 30, fontWeight: FontWeight.bold),
+              style: const TextStyle(
+                fontSize: 30,
+                fontWeight: FontWeight.bold,
+              ),
             ),
             const SizedBox(height: 20),
             Text(
@@ -751,18 +839,29 @@ class _PracticePageState extends State<PracticePage> {
               style: TextStyle(
                 fontSize: 25,
                 fontWeight: FontWeight.bold,
-                color: score >= 75 ? Colors.green : Colors.orange,
+                color:
+                score >= 75 ? Colors.green : Colors.orange,
               ),
             ),
             const SizedBox(height: 40),
+
+            // UPDATED BUTTON LOGIC
             ElevatedButton(
-              onPressed: _loadNextWord,
+              onPressed: _alphabeticalNextList
+                  ? _advanceToNextList
+                  : _loadNextWord,
               style: ElevatedButton.styleFrom(
                 minimumSize: const Size(230, 55),
-                backgroundColor: Color(AppConfig.primaryColor),
+                backgroundColor:
+                Color(AppConfig.primaryColor),
                 foregroundColor: Colors.white,
               ),
-              child: const Text("Next Word", style: TextStyle(fontSize: 22)),
+              child: Text(
+                _alphabeticalNextList
+                    ? "Next List"
+                    : "Next Word",
+                style: const TextStyle(fontSize: 22),
+              ),
             ),
           ],
         ),

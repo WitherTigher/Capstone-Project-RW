@@ -177,7 +177,6 @@ class _TeacherStudentsPage extends State<TeacherStudentsPage> {
                     'Get a detailed view of your students data',
                     style: TextStyle(
                       fontSize: 30,
-                      color: Colors.black,
                     ),
                   ),
                   SizedBox(height: 30),

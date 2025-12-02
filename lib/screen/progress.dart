@@ -122,7 +122,6 @@ class _ProgressPageState extends State<ProgressPage> {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(24),
-      color: Colors.white,
       child: Column(
         children: [
           const Text(
@@ -134,7 +133,7 @@ class _ProgressPageState extends State<ProgressPage> {
           const SizedBox(height: 8),
           Text(
             'Average Score (${stats['totalAttempts'] ?? 0} attempts)',
-            style: TextStyle(color: Colors.grey.shade600),
+            style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
           ),
         ],
       ),

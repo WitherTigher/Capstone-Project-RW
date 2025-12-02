@@ -14,6 +14,8 @@ import 'package:record/record.dart';
 import '../models/assessment_result.dart';
 import 'package:confetti/confetti.dart';
 import 'package:flutter_tts/flutter_tts.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+
 
 class PracticePage extends StatefulWidget {
   final bool testMode;
@@ -434,14 +436,30 @@ class _PracticePageState extends State<PracticePage> {
     while (goThrough < loop && continues == true) {
       goThrough++;
 
-      final uri = Uri.parse("${_getServerBaseUrl()}/assess");
-      final request = http.MultipartRequest("POST", uri)
-        ..files.add(
-          await http.MultipartFile.fromPath("audio_file", wavFile.path),
-        )
-        ..fields["reference_text"] = _currentWord!.text;
+      final key = dotenv.env['AZURE_KEY'] as String;
 
-      final response = await request.send();
+      final configJson = {
+        "referenceText": _currentWord!.text,
+        "gradingSystem": "HundredMark",
+        "dimension": "Comprehensive",
+        // "phonemeAlphabet": "IPA"
+      };
+      final configBase64 = base64.encode(utf8.encode(json.encode(configJson)));
+      final url = Uri.parse(
+        "https://eastus2.stt.speech.microsoft.com/speech/recognition/conversation/cognitiveservices/v1?language=en-US",
+      );
+      final audioBytes = await wavFile.readAsBytes();;
+
+      final response = await http.post(
+        url,
+        headers: {
+          "Ocp-Apim-Subscription-Key": key,
+          "Content-Type": "audio/wav",
+          "Pronunciation-Assessment": configBase64,
+        },
+        body: audioBytes,
+      );
+
       final user = Supabase.instance.client.auth.currentUser;
       if (user == null) return;
 
@@ -459,8 +477,11 @@ class _PracticePageState extends State<PracticePage> {
       } else if (response.statusCode == 200) {
         continues = false;
 
-        final body = await response.stream.bytesToString();
+        final body = response.body;
+        // final body = await response.stream.bytesToString();
+        print(body);
         final decoded = jsonDecode(body);
+        print(decoded);
         _assessmentResult = AssessmentResult.fromJson(decoded);
 
         final wordId = _currentWord!.id;

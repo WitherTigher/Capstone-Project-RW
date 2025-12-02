@@ -42,6 +42,13 @@ class StudentBaseScaffold extends StatelessWidget {
         // ------------------------------
         actions: [
           IconButton(
+            icon: const Icon(Icons.dark_mode, color: Colors.white),
+            tooltip: 'Dark mode',
+            onPressed: () async {
+
+            },
+          ),
+          IconButton(
             icon: const Icon(Icons.logout, color: Colors.white),
             tooltip: 'Logout',
             onPressed: () async {

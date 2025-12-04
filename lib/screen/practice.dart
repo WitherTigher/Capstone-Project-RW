@@ -486,16 +486,16 @@ class _PracticePageState extends State<PracticePage> {
         if (!_micIsReady && amp.current != null) {
           _micIsReady = true;
 
-          setState(() {
-            _showCountdown = true;
-            _countdown = 3;
-          });
-
-          for (int i = 3; i > 0; i--) {
-            await Future.delayed(const Duration(seconds: 1));
-            if (!mounted) return;
-            setState(() => _countdown = i);
-          }
+          // setState(() {
+          //   _showCountdown = true;
+          //   _countdown = 3;
+          // });
+          //
+          // for (int i = 3; i > 0; i--) {
+          //   await Future.delayed(const Duration(seconds: 1));
+          //   if (!mounted) return;
+          //   setState(() => _countdown = i);
+          // }
 
           if (!mounted) return;
           setState(() => _showCountdown = false);

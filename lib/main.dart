@@ -42,10 +42,6 @@ Future<void> main() async {
     anonKey: supabaseAnonKey,
   );
 
-  if (!kIsWeb) {
-    await Supabase.instance.client.auth.signOut();
-  }
-
   runApp(
     MultiProvider(
       providers: [

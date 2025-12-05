@@ -569,7 +569,7 @@ class _PracticePageState extends State<PracticePage> {
         _assessmentResult = AssessmentResult.fromJson(decoded);
 
         final wordId = _currentWord!.id;
-        final score = _assessmentResult?.accuracy ?? 0;
+        final score = _assessmentResult?.pronScore ?? 0;
 
         final shouldSave = await _shouldSaveAudio(user.id);
         String? url;

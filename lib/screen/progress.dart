@@ -195,7 +195,7 @@ class _ProgressPageState extends State<ProgressPage> {
         children: attempts.take(5).map((a) {
           final wordText =
               a['words']?['text'] ?? a['word_text'] ?? 'Unknown';
-          final score = a['score'] ?? 0;
+          final score = ((a['score'] ?? 0) as num).round();
           final feedback = a['feedback'] ?? 'No feedback';
           return _buildAttemptRow(context, wordText, score, feedback);
         }).toList(),

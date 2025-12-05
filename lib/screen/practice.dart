@@ -486,16 +486,16 @@ class _PracticePageState extends State<PracticePage> {
         if (!_micIsReady && amp.current != null) {
           _micIsReady = true;
 
-          setState(() {
-            _showCountdown = true;
-            _countdown = 3;
-          });
-
-          for (int i = 3; i > 0; i--) {
-            await Future.delayed(const Duration(seconds: 1));
-            if (!mounted) return;
-            setState(() => _countdown = i);
-          }
+          // setState(() {
+          //   _showCountdown = true;
+          //   _countdown = 3;
+          // });
+          //
+          // for (int i = 3; i > 0; i--) {
+          //   await Future.delayed(const Duration(seconds: 1));
+          //   if (!mounted) return;
+          //   setState(() => _countdown = i);
+          // }
 
           if (!mounted) return;
           setState(() => _showCountdown = false);
@@ -569,7 +569,7 @@ class _PracticePageState extends State<PracticePage> {
         _assessmentResult = AssessmentResult.fromJson(decoded);
 
         final wordId = _currentWord!.id;
-        final score = _assessmentResult?.accuracy ?? 0;
+        final score = _assessmentResult?.pronScore ?? 0;
 
         final shouldSave = await _shouldSaveAudio(user.id);
         String? url;
